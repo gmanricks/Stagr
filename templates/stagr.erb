@@ -1,0 +1,252 @@
+#!/usr/bin/php
+<?php
+
+/*
+* Script to setup a staging server for Fortrabbit
+* Author: Gabriel Manricks
+*
+* Created for NetTuts+ Article
+*/
+
+	//Welcome Message
+	echo <<<LOGO
+
+      /)                   /)  /)  ,     
+     // _____ _/_ __  _   (/_ (/_   _/_  
+    /(_(_)/ (_(__/ (_(_(_/_) /_) _(_(__  
+   /)                                    
+  (/   
+         [31mStaging Enviroment[0m Setup
+
+
+LOGO;
+	
+	//Check if Root
+	if($_SERVER['USER'] == "root"){
+
+		$email = getUsersEmail();
+		
+		//Get Projects Name
+		echo "Please enter the [95mproject's name[0m: ";
+		$name = trim(fgets(STDIN));
+		$fname = str_replace(" ", "_", $name);
+	
+		//Create Directory for site
+		createSite($fname, $email);
+	
+		//Create Git Stuff
+		createGit($fname);
+		
+		echo "\n[36mStaging Enviroment Setup !!![0m\n\n";
+
+		
+		printHostsInfo($fname);	
+		printGitInfo($fname);
+
+		echo "\nYou are now ready to push, Thank you for reading [36mNetTuts+[0m\n\n";
+	}
+	else{
+		echo "  [31mError:[0m this script must be run as [31mroot[0m\n";
+	}
+
+	function createSite($name, $email){
+		echo "\n\n[33mSite Setup\n––––––––––[0m\n";
+		//Create Folder
+		echo "Creating Directory ... ";
+		mkdir("/var/www/" . $name, 0755);
+		chown("/var/www/" . $name, "vagrant");
+		chgrp("/var/www/" . $name, "vagrant");
+		echo "[36mOK[0m\n";
+
+		//Create Site File
+		echo "Creating Site File ... ";
+		$sf = fopen("/etc/apache2/sites-available/" . $name, "w");
+		$site = getSite($name, $email);
+		fwrite($sf, $site);
+		fclose($sf);
+		
+		//Create symlink to sites-enabled
+		symlink("/etc/apache2/sites-available/" . $name, "/etc/apache2/sites-enabled/" . $name);
+
+		echo "[36mOK[0m\n";
+		echo "Restarting Apache ... ";
+		exec("service apache2 restart");
+		echo "[36mOK[0m\n";
+	}
+	
+	function createGit($name){
+		echo "\n\n[33mGit Setup\n–––––––––[0m\n";
+		
+		echo "Creating Bare Repository ... ";
+	
+		$gitDir = "/home/vagrant/" . $name . ".git";		
+
+		mkdir($gitDir, 0755);
+		chown($gitDir, "vagrant");
+		chgrp($gitDir, "vagrant");
+		
+		chdir("/home/vagrant/" . $name . ".git");
+		exec("sudo -u vagrant git init --bare");
+	
+		echo "[36mOK[0m\n";
+	
+		echo "Creating Repo in Sites Directory ... ";
+
+		chdir("/var/www/" . $name);
+		exec("sudo -u vagrant git init");
+		exec("sudo -u vagrant git remote add origin " . $gitDir);
+
+		echo "[36mOK[0m\n";
+
+		echo "Adding Hooks ... ";
+	
+		$preh = fopen($gitDir . "/hooks/pre-receive", "w");
+		$prf = getPreHook(); 		
+		fwrite($preh, $prf);
+		fclose($preh);
+		
+		$posth = fopen($gitDir . "/hooks/post-receive", "w");
+		$prf = getPostHook($name);
+		fwrite($posth, $prf);
+		fclose($posth);
+
+		chmod($gitDir . "/hooks/pre-receive", 0775); 
+		chown($gitDir . "/hooks/pre-receive", "vagrant");
+		chgrp($gitDir . "/hooks/pre-receive", "vagrant");
+	
+		chmod($gitDir . "/hooks/post-receive", 0775); 
+		chown($gitDir . "/hooks/post-receive", "vagrant");
+		chgrp($gitDir . "/hooks/post-receive", "vagrant");
+
+		echo "[36mOK[0m\n";
+
+	}
+	
+	function printHostsInfo($name){
+		echo "To get started, add the correct record to your [95mHOSTS[0m file: ([95m/etc/hosts[0m)\n\n";
+		echo getIps($name);
+		echo "\nIf you're not sure try accessing the [95mIPs[0m from your computer ([95mbrowser, ping, curl, etc..[0m)\n\n";
+	}
+	
+	function printGitInfo($name){
+		echo "\nAnd add this server to your [95mGIT[0m repository:\n\n";
+		echo "     git remote add staging vagrant@" . $name . ".dev:" . $name . ".git\n";
+	}
+	
+	function getIps($name){
+		exec("ip -4 -o addr show label eth*", $arr);
+		foreach($arr as $k => $ip)
+		{
+			$arr[$k] = "     " . str_pad(filterIP($ip), 15) . "   " . $name . ".dev\n";
+		}
+		return implode("", $arr);
+	}
+
+	function filterIP($ipstr){
+		$start = strpos($ipstr, "inet") + 5;
+		$length = (strpos($ipstr, "/", $start)) - $start;
+		return substr($ipstr, $start, $length);
+	}
+
+	function getUsersEmail(){
+		$email = "";
+		if(!file_exists("/home/vagrant/.stagedata")){
+			echo "This seems to be your first time running this program\n\n";
+
+			//Get Users email and pub key
+			echo "Please enter your [95mE-Mail[0m: ";
+			$email = trim(fgets(STDIN));
+			echo "Please enter your [95mSSH public key[0m: ";
+			$pub  = trim(fgets(STDIN));
+
+			//Save info
+			echo "\nAdding you as an [33mAuthorized Host[0m\n\n";
+
+			$sdf = fopen("/home/vagrant/.stagedata", "w");
+			fwrite($sdf, $email . "\n" . $pub);
+			fclose($sdf);
+		
+			//Add to Authed Hosts
+			$af = fopen("/home/vagrant/.ssh/authorized_keys", "a");
+			fwrite($af, $pub);
+			fclose($af);
+		}
+		else{
+			//Get users Email for Later
+			$sdf = fopen("/home/vagrant/.stagedata", "r");
+			$email = fgets($sdf);
+			fclose($sdf);
+		}
+		return $email;
+	}
+	
+	function getSite($name, $email){
+		return <<<SITE
+
+<VirtualHost *:80>
+	ServerAdmin $email
+	ServerName $name.dev
+	DocumentRoot /var/www/$name
+	
+	<Directory /var/www/$name>
+		Options Indexes FollowSymLinks MultiViews
+		AllowOverride ALL
+		Order allow,deny
+		allow from all
+	</Directory>	
+	
+	ErrorLog \${APACHE_LOG_DIR}/$name.log
+	LogLevel debug
+</VirtualHost>
+SITE;
+	}
+
+	function getPreHook(){
+		return <<<PREHOOK
+#!/usr/bin/php
+<?php 
+echo "[33mStep1: Updating repository[0m \\n";
+?>
+PREHOOK;
+	}
+	
+	function getPostHook($name){
+		return <<<POSTHOOK
+#!/usr/bin/php
+<?php 
+\$bld = "[1m";
+\$yel = "[33m";
+\$blu = "[36m";
+\$reg = "[0m";
+echo \$bld . ' -> ' . \$reg . \$blu . 'OK' . \$reg . "\\n";
+echo \$yel . 'Step2: Deploying' . \$reg . "\\n";
+
+//Deploy Code to Server
+\$git = "/usr/bin/git --git-dir=/var/www/$name/.git/ --work-tree=/var/www/$name/";
+
+exec("\$git fetch -q origin");
+exec("\$git reset --hard origin/master");
+
+echo \$bld . ' -> ' . \$reg . \$blu . 'OK' . \$reg . "\\n";
+//Read Commit Message
+\$msg = exec("\$git log -n 1 --format=format:%s%b");
+
+if(strpos(\$msg, "[trigger:") !== false){
+	echo \$yel . 'Step3: Composer Hook' . \$reg . "\\n";
+
+	//Run Composer
+	chdir("/var/www/$name/");
+	putenv("GIT_DIR");
+	
+	//Check if something new	
+	echo \$bld . ' -> ' . \$reg . 'Triggering install - get a ' . \$blu . 'coffee' . \$reg . "\\n";
+	exec("composer update", \$arr);
+	echo \$bld . ' -> ' . \$reg . \$blu . 'OK' . \$reg . "\\n";
+}
+
+echo \$yel . ">> All Done <<\\n" . \$reg;
+POSTHOOK;
+
+	}
+
+?>
