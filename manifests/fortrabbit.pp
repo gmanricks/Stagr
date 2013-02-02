@@ -11,6 +11,13 @@ class fortrabbit {
 		mode 	=> '0600',
 		content => "deb http://packages.dotdeb.org squeeze all\ndeb-src http://packages.dotdeb.org squeeze all\ndeb http://packages.dotdeb.org squeeze-php54 all\ndeb-src http://packages.dotdeb.org squeeze-php54 all";
   	}
+	file { '/etc/apt/sources.list.d/frbit.list':
+		ensure  => 'present',
+		owner   => 'root',
+		group   => 'root',
+		mode 	=> '0600',
+		content => "deb http://debrepo.frbit.com/ frbit-squeeze main";
+	}
 	exec { 'dotdeb-key':
 		path 	=> '/bin:/usr/bin',
 		cwd		=> '/tmp',
@@ -18,17 +25,23 @@ class fortrabbit {
 		require => File['/etc/apt/sources.list.d/dotdeb.list'],
 		notify	=> Exec["update-apt"]; 
 	}
+	exec { 'frbit-key':
+		path 	=> '/bin:/usr/bin',
+		command => "wget -O - http://debrepo.frbit.com/frbit.gpg | sudo apt-key add -",
+		require => File['/etc/apt/sources.list.d/frbit.list'],
+		notify	=> Exec["update-apt"]; 
+	}
 	exec { 'update-apt':
 		path 		=> '/bin:/usr/bin',
 		command 	=> 'apt-get update',
-		require 	=>	Exec['dotdeb-key'],
+		require 	=>	Exec['dotdeb-key', 'frbit-key'],
 		refreshonly => true;
 	}
 	package { 'php5' : 
 		ensure => installed,
 		require => Exec['update-apt'];
 	}
-	$packagesArr = [ "php5-xdebug", "php5-tidy", "php5-sqlite", "php5-redis", "php5-pgsql", "php5-mysqlnd", "php5-memcache", "php5-memcached", "php5-mcrypt", "php5-imagick", "php5-http", "php5-gmp", "php5-gd", "php5-curl", "php5-apc", "php5-intl" ]
+	$packagesArr = [ "php5-xdebug", "php5-tidy", "php5-sqlite", "php5-redis", "php5-pgsql", "php5-mysqlnd", "php5-memcache", "php5-memcached", "php5-mcrypt", "php5-imagick", "php5-http", "php5-gmp", "php5-gd", "php5-curl", "php5-apc", "php5-intl", "php5-igbinary", "php5-mongo", "php5-oauth", "php5-phalcon", "php5-runkit", "php5-stats", "php5-stomp", "php5-yaf", "php5-yaml" ]
 	package { $packagesArr: 
 		ensure	=> installed, 
 		require => Package['php5']; 
