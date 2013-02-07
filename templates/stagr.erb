@@ -29,9 +29,15 @@ LOGO;
 		$email = getUsersEmail();
 		
 		//Get Projects Name
-		echo "Please enter the [95mProject's Name[0m: ";
-		$name = trim(fgets(STDIN));
-		$fname = str_replace(" ", "_", $name);
+		$fname = '';
+		while (empty($fname)) {
+			echo "Please enter the [95mProject's Name[0m: ";
+			$fname = trim(fgets(STDIN));
+			if (!preg_match('/^[a-z0-9][a-z0-9\-]{0,14}[a-z0-9]$/', $fname)) {
+				echo "Error: '$fname' is not a vailid name -> use only a-z, 0-9 and '-'\n\n";
+				$fname = '';
+			}
+		}
 	
 		//Setup Apache options
 		createSite($fname, $email);
@@ -55,10 +61,19 @@ LOGO;
 		echo "\n\n[33mSite Setup\n––––––––––[0m\n";
 
 		//Create Folder
-		echo "Creating Directory ... ";
-		mkdir("/var/www/" . $name, 0755);
-		chown("/var/www/" . $name, "vagrant");
-		chgrp("/var/www/" . $name, "vagrant");
+		echo "Creating Directories ... ";
+		foreach (array('/var/www/web/%s/htdocs', '/var/www/web/%s/redir', '/var/fpm/socks/%s', '/var/fpm/prepend/%s') as $tmpl) {
+			$dir = sprintf($tmpl, $name);
+			mkdir($dir, 0755, true);
+			chown($dir, "vagrant");
+			chgrp($dir, "vagrant");
+		}
+		echo "[36mOK[0m\n";
+
+		//Create Symlink for PHP-FPM
+		echo "Creating Symlink for PHP-FPM ... ";
+		exec("chdir /var/www/web/$name/redir; ln -s ../htdocs php");
+		//symlink("php", "../htdocs");
 		echo "[36mOK[0m\n";
 
 		//Create Vhost File
@@ -67,14 +82,35 @@ LOGO;
 		$site = getSite($name, $email);
 		fwrite($sf, $site);
 		fclose($sf);
-		
+		echo "[36mOK[0m\n";
+
 		//Symlink Vhost to sites-enabled
 		symlink("/etc/apache2/sites-available/" . $name, "/etc/apache2/sites-enabled/" . $name);
 
-		//Restart Apache
+		//Create FPM Config
+		echo "Creating FPM Config ... ";
+		$ff = fopen("/etc/php5/fpm/pool.d/$name.conf", "w");
+		$conf = getFpmConf($name);
+		fwrite($ff, $conf);
+		fclose($ff);
 		echo "[36mOK[0m\n";
+
+		//Create PHP/FPM prepend file
+		echo "Creating PHP/FPM Prepend File ... ";
+		$pf = fopen("/var/fpm/prepend/$name/prepend.php", "w");
+		$prepend = getFpmPrepend($name);
+		fwrite($pf, $prepend);
+		fclose($pf);
+		echo "[36mOK[0m\n";
+
+		//Restart Apache
 		echo "Restarting Apache ... ";
 		exec("service apache2 restart");
+		echo "[36mOK[0m\n";
+
+		//Restart PHP-FPM
+		echo "Restarting Apache ... ";
+		exec("service php5-fpm restart");
 		echo "[36mOK[0m\n";
 	}
 	
@@ -95,7 +131,7 @@ LOGO;
 
 		//Create Site's Repo
 		echo "Creating Repo in Sites Directory ... ";
-		chdir("/var/www/" . $name);
+		chdir("/var/www/web/" . $name. "/htdocs");
 		exec("sudo -u vagrant git init");
 
 		//Link Both Repos
@@ -196,22 +232,109 @@ LOGO;
 	function getSite($name, $email){
 		return <<<SITE
 
+FastCgiExternalServer /var/www/web/$name/redir/php -socket /var/fpm/socks/$name.sock -idle-timeout 305 -flush
+
 <VirtualHost *:80>
 	ServerAdmin $email
 	ServerName $name.dev
-	DocumentRoot /var/www/$name
+	DocumentRoot /var/www/web/$name/htdocs
+
+	SetEnv APP_NAME "$name"
+
+	# PHP Settings
+	<FilesMatch \.php$>
+		SetEnv no-gzip dont-vary
+		Options +ExecCGI
+	</FilesMatch>
+	AddHandler php5-$name-fcgi .php
+	Action php5-$name-fcgi /.ctrl/~~~php
+	Alias /.ctrl/~~~php /var/www/web/$name/redir/php
 	
-	<Directory /var/www/$name>
-		Options Indexes FollowSymLinks MultiViews
-		AllowOverride ALL
+	<Directory /var/www/web/$name/htdocs>
+		# PathInfo for PHP-FPM
+		RewriteEngine On
+		RewriteCond %{REQUEST_URI} \.php/ [NC]
+		RewriteRule ^(.*)\.php/(.*)$    /$1.php [NC,L,QSA,E=PATH_INFO:/$2]
+
+		Options -All +SymLinksIfOwnerMatch
+		AllowOverride AuthConfig Limit FileInfo Indexes Options=SymLinksIfOwnerMatch,MultiViews,Indexes
 		Order allow,deny
 		allow from all
-	</Directory>	
+	</Directory>
 	
 	ErrorLog \${APACHE_LOG_DIR}/$name.log
 	LogLevel debug
 </VirtualHost>
+
 SITE;
+	}
+
+	//function to return fpm config
+	function getFpmConf($name) {
+		return <<<FPMCONF
+[$name]
+listen = /var/fpm/socks/$name.sock
+
+listen.owner = vagrant
+listen.group = www-data
+listen.mode  = 0660
+
+user = vagrant
+group = www-data
+
+pm = dynamic
+pm.max_children = 5
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 5
+pm.max_requests = 1000
+request_terminate_timeout = 300
+php_value[open_basedir] = ""
+php_value[include_path] = ".:/usr/share/php:/var/www/web/$name/htdocs"
+php_value[upload_tmp_dir] = "/tmp"
+php_value[session.save_path] = "/tmp"
+php_value[apc.shm_size] = "64M"
+php_value[auto_prepend_file] = "/var/fpm/prepend/$name/prepend.php"
+php_value[max_execution_time] = "300"
+php_value[upload_max_filesize] = "128M"
+php_value[default_charset] = "UTF-8"
+php_value[short_open_tag] = "ON"
+;php_value[date.timezone] = "Europe/Berlin"
+
+FPMCONF;
+	}
+
+	//function to return fpm config
+	function getFpmPrepend($name) {
+		return <<<FPMPREPEND
+<?php
+
+if (!defined('__PREPEND_INITED')) {
+    define('__PREPEND_INITED', true);
+
+    foreach (array('SCRIPT_NAME', 'PHP_SELF') as \$env) {
+        \$_SERVER[\$env] = str_replace('/.ctrl/~~~php/', '/', str_replace('/.ctrl/php/', '/', \$_SERVER[\$env]));
+    }
+    foreach (array('SCRIPT_FILENAME') as \$env) {
+        \$_SERVER[\$env] = str_replace('/.ctrl/~~~php/', '/htdocs/', str_replace('/.ctrl/php/', '/htdocs/', \$_SERVER[\$env]));
+    }
+    foreach (array_keys(\$_SERVER) as \$env_key) {
+        if (\$env_key == 'REDIRECT_STATUS') {
+            continue;
+        }
+        elseif (preg_match('/^(?:REDIRECT_)+(.+)$/', \$env_key, \$match)) {
+            if (! isset(\$_SERVER[\$match[1]])) {
+                \$_SERVER[\$match[1]] = \$_SERVER[\$env_key];
+            }
+            unset(\$_SERVER[\$env_key]);
+        }
+    }
+    foreach (array('ORIG_SCRIPT_FILENAME', 'ORIG_PATH_INFO', 'ORIG_PATH_TRANSLATED', 'ORIG_SCRIPT_NAME', 'HTTP_X_FORWARDED_PROTO', 'HTTP_X_FORWARDED_PORT', 'HTTP_X_FORWARDED_FOR') as \$key) {
+        unset(\$_SERVER[\$key]);
+    }
+}
+
+FPMPREPEND;
 	}
 
 	//function to return pre-receive hook
@@ -233,7 +356,7 @@ PREHOOK;
 echo " -> [36mOK[0m\n";
 
 echo "[33mStep2: Deploying[0m\n";
-\$git = "git --git-dir=/var/www/$name/.git/ --work-tree=/var/www/$name/";
+\$git = "git --git-dir=/var/www/web/$name/htdocs/.git/ --work-tree=/var/www/web/$name/htdocs/";
 exec("\$git fetch -q origin");
 exec("\$git reset --hard origin/master");
 echo " -> [36mOK[0m\n";
@@ -242,7 +365,7 @@ echo " -> [36mOK[0m\n";
 if(strpos(\$msg, "[trigger:composer]") !== false){
 	echo "[33mStep3: Composer Hook[0m\n";
 	echo " -> Triggering install - get a [36mcoffee[0m\n";
-	chdir("/var/www/$name");
+	chdir("/var/www/web/$name/htdocs");
 	putenv("GIT_DIR");
 	exec("composer update");	
 	echo " -> [36mOK[0m\n";
