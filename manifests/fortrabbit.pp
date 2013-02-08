@@ -64,7 +64,8 @@ class fortrabbit {
 	exec { 'composer':
 		path => '/bin:/usr/bin',
 		command => 'curl -s https://getcomposer.org/installer | php && mv composer 	.phar /usr/local/bin/composer',
-		require => Package[ 'php5-cli' ];
+		require => Package[ 'php5-cli' ],
+		unless => 'test -f /usr/local/bin/composer';
 	}
 
 	$gitHookDir = '/home/vagrant/PHP-GIT-Hooks'
@@ -92,7 +93,22 @@ class fortrabbit {
 		group	=> 'vagrant',
 		mode	=> '0755',
 		ensure	=> present,
-		content => template("stagr.erb");
+		source	=> '/vagrant/files/stagr.php';
+	}
+	file { '/opt/stagr' :
+		owner	=> 'vagrant',
+		group	=> 'vagrant',
+		mode	=> '0755',
+		ensure	=> directory;
+	}
+	file { '/opt/stagr/lib' :
+		owner	=> 'vagrant',
+		group	=> 'vagrant',
+		mode	=> '0755',
+		ensure	=> directory,
+		source	=> '/vagrant/files/stagr-libs',
+		recurse	=> true,
+		require	=> File['/opt/stagr'];
 	}
 	file { '/home/vagrant/.bash_profile' :
 		owner	=> 'vagrant',
