@@ -1,16 +1,16 @@
 class fortrabbit {
 	file { '/etc/apt/sources.list.d':
-    	ensure  => 'directory',
-    	owner   => 'root',
-    	group   => 'root';
-  	}
+		ensure  => 'directory',
+		owner   => 'root',
+		group   => 'root';
+	}
 	file { '/etc/apt/sources.list.d/dotdeb.list':
-    		ensure  => 'present',
-    		owner   => 'root',
-    		group   => 'root',
+		ensure  => 'present',
+		owner   => 'root',
+		group   => 'root',
 		mode 	=> '0600',
 		content => "deb http://packages.dotdeb.org squeeze all\ndeb-src http://packages.dotdeb.org squeeze all\ndeb http://packages.dotdeb.org squeeze-php54 all\ndeb-src http://packages.dotdeb.org squeeze-php54 all";
-  	}
+	}
 	file { '/etc/apt/sources.list.d/frbit.list':
 		ensure  => 'present',
 		owner   => 'root',
@@ -103,18 +103,28 @@ class fortrabbit {
 		group	=> 'vagrant';
 	}
 	file { '/home/vagrant/.vim/colors':
-    	ensure  => 'directory',
-    	owner   => 'vagrant',
-    	group   => 'vagrant',
+		ensure  => 'directory',
+		owner   => 'vagrant',
+		group   => 'vagrant',
 		require => File['/home/vagrant/.vim'];
-  	}
+	}
 	file { '/home/vagrant/.vim/colors/solarized.vim':
-    		ensure  => 'present',
-    		owner   => 'vagrant',
-    		group   => 'vagrant',
-			mode 	=> '0644',
-			content => template("solarized.erb"),
-			require => File['/home/vagrant/.vim/colors'];
+		ensure  => 'present',
+		owner   => 'vagrant',
+		group   => 'vagrant',
+		mode 	=> '0644',
+		content => template("solarized.erb"),
+		require => File['/home/vagrant/.vim/colors'];
+	}
+
+	/*
+		MySQL Server
+	*/
+	package {
+		'mysql-server-5.5':
+			ensure	=> installed,
+			require	=> Exec['update-apt'];
+
 	}
 }
 
