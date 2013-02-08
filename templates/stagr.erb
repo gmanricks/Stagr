@@ -353,25 +353,29 @@ PREHOOK;
 #!/usr/bin/php
 <?php 
 
-echo " -> [36mOK[0m\n";
+require("/home/vagrant/PHP-GIT-Hooks/PHook.php");
+\$ph = new PHook;
 
-echo "[33mStep2: Deploying[0m\n";
-\$git = "git --git-dir=/var/www/web/$name/htdocs/.git/ --work-tree=/var/www/web/$name/htdocs/";
-exec("\$git fetch -q origin");
-exec("\$git reset --hard origin/master");
-echo " -> [36mOK[0m\n";
+\$ph->clear(" -> ")->cyan("OK")->withoutACommand();
 
-\$msg = exec("\$git log -n 1 --format=format:%s%b");
-if(strpos(\$msg, "[trigger:composer]") !== false){
-	echo "[33mStep3: Composer Hook[0m\n";
-	echo " -> Triggering install - get a [36mcoffee[0m\n";
-	chdir("/var/www/web/$name/htdocs");
-	putenv("GIT_DIR");
-	exec("composer update");	
-	echo " -> [36mOK[0m\n";
-}
+\$ph->say("Step2: Deploying")
+	->thenRun(function(){
+		\$git = "git --git-dir=/var/www/web/$name/htdocs/.git/ --work-tree=/var/www/web/$name/htdocs/";
+		exec("\$git fetch -q origin");
+		exec("\$git reset --hard origin/master");
+	})
+	->clear("\n -> ")->plain("")->andFinallySay("OK");
 
-echo "[33m>> All Done <<[0m\n";
+\$ph->onTrigger("[trigger:composer]")
+	->say("Step3: Composer Hook")->clear("\n -> Triggering install - get a ")->cyan("coffee")
+	->thenRun(function(){
+		chdir("/var/www/web/$name/htdocs");
+		putenv("GIT_DIR");
+		exec("composer update");
+	})
+	->clear("\n -> ")->plain("")->andFinallySay("OK");
+
+\$ph->say(">> All Done <<")->withoutACommand();
 
 POSTHOOK;
 

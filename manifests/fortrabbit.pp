@@ -37,7 +37,6 @@ class fortrabbit {
 		require 	=>	Exec['dotdeb-key', 'frbit-key'],
 		refreshonly => true;
 	}
-
 	package {
 		'apache2-mpm-worker':
 			ensure => installed,
@@ -65,6 +64,11 @@ class fortrabbit {
 		path => '/bin:/usr/bin',
 		command => 'curl -s https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer',
 		require => Package[ 'php5-cli' ];
+	}
+	exec { 'getPHooks':
+		path 	=> '/bin:/usr/bin',
+		cwd	 	=> '/home/vagrant/',
+		command => 'git clone https://github.com/gmanricks/PHP-GIT-Hooks.git';
 	}
 	file { '/usr/local/bin/composer':
 		owner   => 'vagrant',
