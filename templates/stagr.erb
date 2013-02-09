@@ -424,7 +424,9 @@ PREHOOK;
 <?php 
 
 require("/home/vagrant/PHP-GIT-Hooks/PHook.php");
-\$ph = new PHook;
+use Codestaq\PHook;
+
+\$ph = new PHook\PHook;
 
 \$ph->clear(" -> ")->cyan("OK")->withoutACommand();
 
