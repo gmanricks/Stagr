@@ -1,16 +1,16 @@
 class fortrabbit {
 	file { '/etc/apt/sources.list.d':
-    	ensure  => 'directory',
-    	owner   => 'root',
-    	group   => 'root';
-  	}
+		ensure  => 'directory',
+		owner   => 'root',
+		group   => 'root';
+	}
 	file { '/etc/apt/sources.list.d/dotdeb.list':
-    		ensure  => 'present',
-    		owner   => 'root',
-    		group   => 'root',
+		ensure  => 'present',
+		owner   => 'root',
+		group   => 'root',
 		mode 	=> '0600',
 		content => "deb http://packages.dotdeb.org squeeze all\ndeb-src http://packages.dotdeb.org squeeze all\ndeb http://packages.dotdeb.org squeeze-php54 all\ndeb-src http://packages.dotdeb.org squeeze-php54 all";
-  	}
+	}
 	file { '/etc/apt/sources.list.d/frbit.list':
 		ensure  => 'present',
 		owner   => 'root',
@@ -55,6 +55,7 @@ class fortrabbit {
 			ensure	=> installed, 
 			require => Package['php5-fpm'];
 	}
+
 	exec { 'upgrade-apache':
 		path => '/bin:/usr/bin:/usr/sbin',
 		command => 'a2enmod actions ; a2enmod rewrite ; service apache2 restart',
@@ -62,13 +63,19 @@ class fortrabbit {
 	}
 	exec { 'composer':
 		path => '/bin:/usr/bin',
-		command => 'curl -s https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer',
+		command => 'curl -s https://getcomposer.org/installer | php && mv composer 	.phar /usr/local/bin/composer',
 		require => Package[ 'php5-cli' ];
 	}
+
+	$gitHookDir = '/home/vagrant/PHP-GIT-Hooks'
 	exec { 'getPHooks':
-		path 	=> '/bin:/usr/bin',
-		cwd	 	=> '/home/vagrant/',
-		command => 'git clone https://github.com/gmanricks/PHP-GIT-Hooks.git';
+		path	=> '/bin:/usr/bin',
+		cwd		=> '/home/vagrant/',
+		command	=> "[ -d ${gitHookDir}/.git ] && cd ${gitHookDir} && git pull --all || git clone https://github.com/gmanricks/PHP-GIT-Hooks.git";
+	}
+	file { '/etc/php5/fpm/pool.d/www.conf':
+		ensure => absent,
+		require => Package['php5-fpm']
 	}
 	file { '/usr/local/bin/composer':
 		owner   => 'vagrant',
@@ -107,18 +114,28 @@ class fortrabbit {
 		group	=> 'vagrant';
 	}
 	file { '/home/vagrant/.vim/colors':
-    	ensure  => 'directory',
-    	owner   => 'vagrant',
-    	group   => 'vagrant',
+		ensure  => 'directory',
+		owner   => 'vagrant',
+		group   => 'vagrant',
 		require => File['/home/vagrant/.vim'];
-  	}
+	}
 	file { '/home/vagrant/.vim/colors/solarized.vim':
-    		ensure  => 'present',
-    		owner   => 'vagrant',
-    		group   => 'vagrant',
-			mode 	=> '0644',
-			content => template("solarized.erb"),
-			require => File['/home/vagrant/.vim/colors'];
+		ensure  => 'present',
+		owner   => 'vagrant',
+		group   => 'vagrant',
+		mode 	=> '0644',
+		content => template("solarized.erb"),
+		require => File['/home/vagrant/.vim/colors'];
+	}
+
+	/*
+		MySQL Server
+	*/
+	package {
+		'mysql-server-5.5':
+			ensure	=> installed,
+			require	=> Exec['update-apt'];
+
 	}
 }
 
