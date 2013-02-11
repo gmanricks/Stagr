@@ -27,20 +27,6 @@ exit(0);
  * -------------------------------------------------
  **/
 
-    //Welcome Message
-    echo <<<LOGO
-
-[1m
-       ___ _
-      / __| |_ __ _ __ _ _ _
-      \__ \  _/ _` / _` | '_|
-      |___/\__\__,_\__, |_|
-                   |___/
-[0m
-     [31mStaging Enviroment[0m Setup
-
-
-LOGO;
 
     //Check if Root
     if($_SERVER['USER'] == "root") {
