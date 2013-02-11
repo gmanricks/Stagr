@@ -31,8 +31,7 @@ class SetupCommand extends _Command
         $this
             ->setName('setup')
             ->setDescription('Setup or update an App')
-            ->addArgument('name', InputArgument::OPTIONAL, 'Who do you want to greet?')
-            ->addOption('yell', null, InputOption::VALUE_NONE, 'If set, the task will yell in uppercase letters');
+            ->addArgument('name', InputArgument::OPTIONAL, 'Who do you want to greet?');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -59,14 +58,9 @@ class SetupCommand extends _Command
     }
 
     /**
-     * The long description
+     * Checks whether email and at least one SSH key is there -> if not asks user to input now
      *
-     * @param Some\Class   $arg1  What it contains
-     * @param string       $arg2  What it contains
-     *
-     * @return bool
-     *
-     * @throws \Exception
+     * @param  OutputInterface  $output  For questioning user
      */
     protected function initEmailAndSsh(OutputInterface &$output)
     {

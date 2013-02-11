@@ -63,7 +63,7 @@ class fortrabbit {
 	}
 	exec { 'composer':
 		path => '/bin:/usr/bin',
-		command => 'curl -s https://getcomposer.org/installer | php && mv composer 	.phar /usr/local/bin/composer',
+		command => 'curl -s https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer',
 		require => Package[ 'php5-cli' ],
 		unless => 'test -f /usr/local/bin/composer';
 	}
