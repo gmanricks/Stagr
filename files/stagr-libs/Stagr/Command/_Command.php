@@ -12,7 +12,7 @@
 
 namespace Stagr\Command;
 
-use \Cilex\Command\Command;
+use Cilex\Command\Command;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -29,7 +29,7 @@ abstract class _Command extends Command
      * @param  bool             $inverse     Whether regex resupt should be inverted [opt]
      * @param  string           $errorOut    Output on input error [opt]
      */
-    protected function readStdin(OutputInterface &$output, $prefix = '> ', $matchCheck = null, $inverse = false, $errorOut = null)
+    public function readStdin(OutputInterface &$output, $prefix = '> ', $matchCheck = null, $inverse = false, $errorOut = null)
     {
         $res = '';
         $match = !$matchCheck

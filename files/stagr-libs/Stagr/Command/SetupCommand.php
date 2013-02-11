@@ -36,7 +36,7 @@ class SetupCommand extends _Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        Setup::printLogo();
+        Setup::printLogo('Setup');
 
         // check root
         if (posix_geteuid() !== 0) {
@@ -53,31 +53,29 @@ class SetupCommand extends _Command
             $appName = $this->readStdin($output, 'App Name> ', $appCheck, false, 'Invalid name, try again, use [a-z0-9-]');
         }
 
-        // init next
-        $this->initEmailAndSsh($output);
-    }
+        $setup = new Setup($appName, $output, $this);
+        $setup->initEmailAndSsh();
 
-    /**
-     * Checks whether email and at least one SSH key is there -> if not asks user to input now
-     *
-     * @param  OutputInterface  $output  For questioning user
-     */
-    protected function initEmailAndSsh(OutputInterface &$output)
-    {
-        $app = $this->getApplication()->getContainer();
+        // setup all
+        $output->writeln("\n\nSetup {$appName}\n----------");
 
-        // assure email
-        if (!$app->configParam('email')) {
-            $email = $this->readStdin($output, '<question>Please enter your E-Mail:</question> ');
-            $app->configParam('email', $email);
-        }
+        $output->writeln("\n# Webserver");
+        $setup->setupWebserver();
 
-        // assure ssh key
-        if (!$app->configParam('sshkeys')) {
-            $sshKey = $this->readStdin($output, '<question>Please enter your SSH public key:</question> ');
-            $app->configParam('sshkeys', [$sshKey]);
-            file_put_contents(Setup::STAGR_HOME_DIR.'/.ssh/authorized_keys', $sshKey);
-        }
+        $output->writeln("\n# MySQL");
+        $setup->setupMySQL();
+
+        $output->writeln("\n# Git");
+        $setup->setupGit();
+
+        // print info
+        $output->writeln("\n");
+        $setup->printIpInfo();
+        $output->writeln("");
+        $setup->printGitInfo();
+        $output->writeln("");
+        $setup->printMySQLInfo();
+        $output->writeln("\n");
     }
 
 
