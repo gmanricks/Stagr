@@ -29,7 +29,10 @@ class Stagr extends \Cilex\Application
     {
         parent::__construct('Stagr', self::VERSION);
         $this->command(new \Cilex\Command\GreetCommand());
-        $this->command(new \Stagr\Command\SetupCommand());
+        foreach (glob(__DIR__. '/Command/*Command.php') as $file) {
+            $cmdClass = '\\Stagr\\Command\\'. preg_replace('/^.+\/(.+Command)\.php$/', '$1', $file);
+            $this->command(new $cmdClass());
+        }
     }
 
 }
