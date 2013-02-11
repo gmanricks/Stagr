@@ -15,13 +15,9 @@ namespace Stagr;
  * @author Ulrich Kautz <ulrich.kautz@gmail.com>
  */
 
-class Stagr
+class Stagr extends \Cilex\Application
 {
-
-    /**
-     * @var \PHook
-     */
-    private $pHook;
+    const VERSION = '0.1.0';
 
 
     /**
@@ -29,45 +25,11 @@ class Stagr
      *
      * @param \PHook  $ph  PHpook instance
      */
-    public function __construct(\PHook $ph)
+    public function __construct()
     {
-        $this->pHook = $ph;
+        parent::__construct('Stagr', self::VERSION);
+        $this->command(new \Cilex\Command\GreetCommand());
+        $this->command(new \Stagr\Command\SetupCommand());
     }
-
-    /**
-     * Test
-     */
-    public function run()
-    {
-        $this->printLogo();
-        if (posix_geteuid() !== 0) {
-            echo $this->pHook->red("Error: ")->plain("this script must be run as ")->red("root")->plain("\n")->withoutACommand();
-            exit(1);
-        }
-
-
-    }
-
-
-    /**
-     * Prints the Stagr logo
-     */
-    private function printLogo()
-    {
-        echo <<<LOGO
-
-[1m
-       ___ _
-      / __| |_ __ _ __ _ _ _
-      \__ \  _/ _` / _` | '_|
-      |___/\__\__,_\__, |_|
-                   |___/
-[0m
-     [31mStaging Enviroment[0m Setup
-
-
-LOGO;
-    }
-
 
 }

@@ -85,23 +85,23 @@ class fortrabbit {
 		ensure  => present,
 		require => Exec['composer']; 
 	}
-	file { '/etc/motd' :
+	file { '/etc/motd':
 		content => template("motd.erb");
 	}
-	file { '/usr/bin/stagr' :
+	file { '/usr/bin/stagr':
 		owner	=> 'vagrant',
 		group	=> 'vagrant',
 		mode	=> '0755',
 		ensure	=> present,
 		source	=> '/vagrant/files/stagr.php';
 	}
-	file { '/opt/stagr' :
+	file { '/opt/stagr':
 		owner	=> 'vagrant',
 		group	=> 'vagrant',
 		mode	=> '0755',
 		ensure	=> directory;
 	}
-	file { '/opt/stagr/lib' :
+	file { '/opt/stagr/lib':
 		owner	=> 'vagrant',
 		group	=> 'vagrant',
 		mode	=> '0755',
@@ -110,14 +110,22 @@ class fortrabbit {
 		recurse	=> true,
 		require	=> File['/opt/stagr'];
 	}
-	file { '/home/vagrant/.bash_profile' :
+	file { '/opt/stagr/lib/cilex.phar':
+		owner	=> 'vagrant',
+		group	=> 'vagrant',
+		mode	=> '0644',
+		ensure	=> present,
+		source	=> '/vagrant/files/cilex.phar',
+		require	=> File['/opt/stagr'];
+	}
+	file { '/home/vagrant/.bash_profile':
 		owner	=> 'vagrant',
 		group	=> 'vagrant',
 		mode	=> '0644',
 		ensure	=> present,
 		content	=> template("bash_profile.erb");
 	}
-	file { '/home/vagrant/.vimrc' :
+	file { '/home/vagrant/.vimrc':
 		owner 	=> 'vagrant',
 		group	=> 'vagrant',
 		mode	=> '0644',
