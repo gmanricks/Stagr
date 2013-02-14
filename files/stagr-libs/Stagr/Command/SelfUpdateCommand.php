@@ -72,7 +72,6 @@ class SelfUpdateCommand extends _Command
 
             $newArgs = $_SERVER['argv'];
             array_shift($newArgs);
-            print print_r($newArgs);
             pcntl_exec($_SERVER['PHP_SELF'], $newArgs, $_ENV);
         } else {
             echo "Not updated, no replace\n";
