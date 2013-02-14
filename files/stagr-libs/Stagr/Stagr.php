@@ -19,7 +19,7 @@ use Stagr\Tools\Setup;
 
 class Stagr extends \Cilex\Application
 {
-    const VERSION = '0.1.0';
+    const VERSION = '0.1.1';
 
     /**
      * @var Array
