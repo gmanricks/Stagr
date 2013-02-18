@@ -106,7 +106,7 @@ LOGO;
         if (!$this->app->configParam('sshkeys')) {
             $sshKey = $this->command->readStdin($this->output, '<question>Please enter your SSH public key:</question> ');
             $this->app->configParam('sshkeys', [$sshKey]);
-            file_put_contents(Setup::STAGR_HOME_DIR.'/.ssh/authorized_keys', $sshKey);
+            file_put_contents(Setup::STAGR_HOME_DIR.'/.ssh/authorized_keys', $sshKey, FILE_APPEND);
         }
     }
 
@@ -155,16 +155,7 @@ LOGO;
         file_put_contents("/var/fpm/prepend/$this->appName/prepend.php", $this->generateFpmPrepend());
         $this->output->writeln('<info>OK</info>');
 
-
-        //Restart Apache
-        $this->output->write('Restarting Apache ... ');
-        exec("service apache2 restart");
-        $this->output->writeln('<info>OK</info>');
-
-        //Restart PHP-FPM
-        $this->output->write('Restarting PHP-FPM ... ');
-        exec("service php5-fpm restart");
-        $this->output->writeln('<info>OK</info>');
+        $this->restartServices();
     }
 
 
@@ -271,6 +262,39 @@ LOGO;
 
     }
 
+    /**
+     * Function to rebuild Vhost with new Env Vars
+     */
+    public function rebuildVhost()
+    {
+        unlink("/etc/apache2/sites-available/" . $this->appName);
+        file_put_contents("/etc/apache2/sites-available/" . $this->appName, $this->generateVhostContent());
+    }
+
+    /**
+     * Function to rebuild FPM's Config
+     */
+    public function rebuildFpmConfig()
+    {
+        unlink("/etc/php5/fpm/pool.d/" . $this->appName . ".conf");
+        file_put_contents("/etc/php5/fpm/pool.d/" . $this->appName . ".conf", $this->generateFpmConfig());
+    }
+
+    /**
+     * Function to restart Apache and FPM
+     */
+    public function restartServices()
+    {
+        //Restart Apache
+        $this->output->write('Restarting Apache ... ');
+        exec("service apache2 restart");
+        $this->output->writeln('<info>OK</info>');
+
+        //Restart PHP-FPM
+        $this->output->write('Restarting PHP-FPM ... ');
+        exec("service php5-fpm restart");
+        $this->output->writeln('<info>OK</info>');
+    }
 
 
     /**
@@ -314,7 +338,8 @@ LOGO;
     protected function generateVhostContent()
     {
         $email = $this->app->configParam('email');
-        return <<<SITE
+        $settings = $this->app->configParam($this->appName);
+        $vHost = <<<SITE
 
 FastCgiExternalServer /var/www/web/{$this->appName}/redir/php -socket /var/fpm/socks/{$this->appName}.sock -idle-timeout 305 -flush
 
@@ -325,6 +350,13 @@ FastCgiExternalServer /var/www/web/{$this->appName}/redir/php -socket /var/fpm/s
 
     SetEnv APP_NAME "{$this->appName}"
 
+SITE;
+
+        foreach ($settings['env'] as $key => $value) {
+            $vHost .= '    SetEnv ' . $key . '"' . $value . '"' . "\n";
+        }
+
+        $vHost .= <<<SITE
     # PHP Settings
     <FilesMatch \.php$>
         SetEnv no-gzip dont-vary
@@ -351,6 +383,7 @@ FastCgiExternalServer /var/www/web/{$this->appName}/redir/php -socket /var/fpm/s
 </VirtualHost>
 
 SITE;
+        return $vHost;
     }
 
 
@@ -359,6 +392,12 @@ SITE;
      */
     protected function generateFpmConfig()
     {
+        $settings = $this->app->configParam($this->appName);
+        $memoryLimit = $settings['memory-limit'];
+        $execTime = $settings['exec-time'];
+        $uploadSize = $settings['upload-size'];
+        $shortTags = $settings['short-tags'];
+        $timezone = $settings['timezone'];
         return <<<FPMCONF
 [{$this->appName}]
 listen = /var/fpm/socks/{$this->appName}.sock
@@ -381,13 +420,13 @@ php_value[open_basedir] = ""
 php_value[include_path] = ".:/usr/share/php:/var/www/web/{$this->appName}/htdocs"
 php_value[upload_tmp_dir] = "/tmp"
 php_value[session.save_path] = "/tmp"
-php_value[apc.shm_size] = "64M"
+php_value[apc.shm_size] = "$memoryLimit"
 php_value[auto_prepend_file] = "/var/fpm/prepend/{$this->appName}/prepend.php"
-php_value[max_execution_time] = "300"
-php_value[upload_max_filesize] = "128M"
+php_value[max_execution_time] = "$execTime"
+php_value[upload_max_filesize] = "$uploadSize"
 php_value[default_charset] = "UTF-8"
-php_value[short_open_tag] = "ON"
-;php_value[date.timezone] = "Europe/Berlin"
+php_value[short_open_tag] = "$shortTags"
+;php_value[date.timezone] = "$timezone"
 
 FPMCONF;
     }
@@ -505,5 +544,4 @@ POSTHOOK;
         $length = (strpos($ipstr, "/", $start)) - $start;
         return substr($ipstr, $start, $length);
     }
-
 }
