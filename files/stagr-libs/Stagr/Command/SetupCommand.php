@@ -66,10 +66,10 @@ class SetupCommand extends _Command
              'memory-limit' => '64M',
               'upload-size' => '128M',
                 'post-size' => '128M',
-        'enable-short-tags' => 'ON',
+               'short-tags' => 'ON',
          'output-buffering' => 4096,
-           'enable-phalcon' => false,
-               'enable-yaf' => false
+                  'phalcon' => false,
+                      'yaf' => false
         );
 
         $app->configParam($appName, $defaults);

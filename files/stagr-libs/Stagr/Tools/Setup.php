@@ -106,7 +106,7 @@ LOGO;
         if (!$this->app->configParam('sshkeys')) {
             $sshKey = $this->command->readStdin($this->output, '<question>Please enter your SSH public key:</question> ');
             $this->app->configParam('sshkeys', [$sshKey]);
-            file_put_contents(Setup::STAGR_HOME_DIR.'/.ssh/authorized_keys', $sshKey);
+            file_put_contents(Setup::STAGR_HOME_DIR.'/.ssh/authorized_keys', $sshKey, FILE_APPEND);
         }
     }
 
@@ -393,7 +393,11 @@ SITE;
     protected function generateFpmConfig()
     {
         $settings = $this->app->configParam($this->appName);
-        extract($settings);
+        $memoryLimit = $settings['memory-limit'];
+        $execTime = $settings['exec-time'];
+        $uploadSize = $settings['upload-size'];
+        $shortTags = $settings['short-tags'];
+        $timezone = $settings['timezone'];
         return <<<FPMCONF
 [{$this->appName}]
 listen = /var/fpm/socks/{$this->appName}.sock
@@ -416,12 +420,12 @@ php_value[open_basedir] = ""
 php_value[include_path] = ".:/usr/share/php:/var/www/web/{$this->appName}/htdocs"
 php_value[upload_tmp_dir] = "/tmp"
 php_value[session.save_path] = "/tmp"
-php_value[apc.shm_size] = "$memory-limit"
+php_value[apc.shm_size] = "$memoryLimit"
 php_value[auto_prepend_file] = "/var/fpm/prepend/{$this->appName}/prepend.php"
-php_value[max_execution_time] = "$exec-time"
-php_value[upload_max_filesize] = "$upload-size"
+php_value[max_execution_time] = "$execTime"
+php_value[upload_max_filesize] = "$uploadSize"
 php_value[default_charset] = "UTF-8"
-php_value[short_open_tag] = "$enable-short-tags"
+php_value[short_open_tag] = "$shortTags"
 ;php_value[date.timezone] = "$timezone"
 
 FPMCONF;

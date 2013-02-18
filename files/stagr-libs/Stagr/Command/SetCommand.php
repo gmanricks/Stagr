@@ -217,8 +217,8 @@ class SetCommand extends _Command
      */
     protected function enableShortTags(&$settings, &$input)
     {
-        if ($input->getOption('enable-short-tags')) {
-            $settings['enable-short-tags'] = true;
+        if ($input->getOption('short-tags')) {
+            $settings['short-tags'] = true;
 
             //TODO: Enable PHP Short Tags
         }
@@ -232,7 +232,7 @@ class SetCommand extends _Command
     protected function enablePhalcon(&$settings, &$input)
     {
         if ($input->getOption('enable-phalcon')) {
-            $settings['enable-phalcon'] = true;
+            $settings['phalcon'] = true;
 
             //TODO: Enable Phalcon
         }
@@ -246,7 +246,7 @@ class SetCommand extends _Command
     protected function enableYaf(&$settings, &$input)
     {
         if ($input->getOption('enable-yaf')) {
-            $settings['enable-yaf'] = true;
+            $settings['yaf'] = true;
 
             //TODO: Enable Yaf
         }
@@ -260,7 +260,7 @@ class SetCommand extends _Command
     protected function disableShortTags(&$settings, &$input)
     {
         if ($input->getOption('disable-short-tags')) {
-            $settings['disable-short-tags'] = true;
+            $settings['short-tags'] = false;
 
             //TODO: Disable PHP Short Tags
         }
@@ -274,7 +274,7 @@ class SetCommand extends _Command
     protected function disablePhalcon(&$settings, &$input)
     {
         if ($input->getOption('disable-phalcon')) {
-            $settings['disable-phalcon'] = true;
+            $settings['phalcon'] = false;
 
             //TODO: Disable Phalcon
         }
@@ -288,7 +288,7 @@ class SetCommand extends _Command
     protected function disableYaf(&$settings, &$input)
     {
         if ($input->getOption('disable-yaf')) {
-            $settings['disable-yaf'] = true;
+            $settings['yaf'] = false;
 
             //TODO: Disable Yaf
         }
