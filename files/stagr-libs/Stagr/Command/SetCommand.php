@@ -25,6 +25,9 @@ use Stagr\Tools\Setup;
 class SetCommand extends _Command
 {
 
+    private $updateFpm;
+    private $updateApache;
+    private $updateGit;
 
     protected function configure()
     {
@@ -61,7 +64,12 @@ class SetCommand extends _Command
         $appName = $input->getArgument('app');
         $app = $this->getApplication()->getContainer();
         $settings = (is_array($app->configParam($app))) ? $app->configParam($app) : array();
-        
+    
+        //Initialize rebuild booleans
+        $this->updateFpm = false;
+        $this->updateApache = false;
+        $this->updateGit = false;
+
         // proccess CLI options
         $this->setEnviromentVars($settings, $input);
         $this->setWebcall($settings, $input);
@@ -80,6 +88,20 @@ class SetCommand extends _Command
 
         // save settings
         $app->configParam($appName, $settings);
+
+        $setup = new Setup($appName, $output, $this);
+
+        if ($this->updateFpm) {
+            $setup->rebuildFpmConfig();
+        }
+
+        if ($this->updateApache) {
+            $setup->rebuildVhost();
+        }
+
+        if ($this->updateApache || $this->updateFpm) {
+            $setup->restartServices();
+        }
     }
 
     /**
@@ -90,11 +112,22 @@ class SetCommand extends _Command
     protected function setEnviromentVars(&$settings, &$input)
     {
         if ($env = $input->getOption('env')) {
-            //TODO: Do some input validation
 
-            $settings['env'] = $env;
+            $vars = array();
 
-            //TODO: Set the PHP env vars foreach
+            foreach ($env as $str) {
+                $raw = explode("=", $str);
+                if (!count($raw) === 2) {
+                    $raw = explode(":", $str);
+                }
+                if (count($raw) === 2) {
+                    array_push($vars, array($raw[0] => $raw[1]));
+                }
+            }
+
+            $settings['env'] = $vars;
+
+            $this->updateApache = true;
         }
     }
 
@@ -122,11 +155,14 @@ class SetCommand extends _Command
     protected function setTimezone(&$settings, &$input)
     {
         if ($timezone = $input->getOption('timezone')) {
-            //TODO: Make sure timezone is valid for PHP
-
-            $settings['timezone'] = $timezone;
-
-            //TODO: Update PHP's Timezone
+            
+            //Validate timezone
+            $timezoneValidate = timezone_open($timezone);
+            
+            if ($timezoneValidate) {
+                $settings['timezone'] = $timezone;
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -138,11 +174,12 @@ class SetCommand extends _Command
     protected function setExecTime(&$settings, &$input)
     {
         if ($execTime = $input->getOption('exec-time')) {
-            //TODO: Make sure it's valid PHP exec-time
-
-            $settings['exec-time'] = $execTime;
-
-            //TODO: Update PHP's max exec time
+            
+            //Validates that it's a number
+            if (is_numeric($execTime)) {
+                $settings['exec-time'] = max(intval($execTime), 0);
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -154,11 +191,12 @@ class SetCommand extends _Command
     protected function setMemoryLimit(&$settings, &$input)
     {
         if ($memoryLimit = $input->getOption('memory-limit')) {
-            //TODO: Make sure it's valid PHP memory limit
-
-            $settings['memory-limit'] = $memoryLimit;
-
-            //TODO: Update PHP's max memory limit
+            
+            //Validate that it is a valid memory size parameter
+            if (preg_match('/^[0-9]+[KMG]?$/', $memoryLimit)) {
+                $settings['memory-limit'] = $memoryLimit;
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -170,11 +208,12 @@ class SetCommand extends _Command
     protected function setUploadSize(&$settings, &$input)
     {
         if ($uploadSize = $input->getOption('upload-size')) {
-            //TODO: Make sure it's valid PHP upload size
 
-            $settings['upload-size'] = $uploadSize;
-
-            //TODO: Update PHP's max upload size
+            //Validate that it is a valid upload size parameter
+            if (preg_match('/^[0-9]+[KMG]?$/', $uploadSize)) {
+                $settings['upload-size'] = $uploadSize;
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -186,11 +225,12 @@ class SetCommand extends _Command
     protected function setPostSize(&$settings, &$input)
     {
         if ($postSize = $input->getOption('post-size')) {
-            //TODO: Make sure it's valid PHP POST size
-
-            $settings['post-size'] = $postSize;
-
-            //TODO: Update PHP's max POST size
+            
+            //Validate that it is a valid post size parameter
+            if (preg_match('/^[0-9]+[KMG]?$/', $postSize)) {
+                $settings['post-size'] = $postSize;
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -218,9 +258,8 @@ class SetCommand extends _Command
     protected function enableShortTags(&$settings, &$input)
     {
         if ($input->getOption('short-tags')) {
-            $settings['short-tags'] = true;
-
-            //TODO: Enable PHP Short Tags
+            $settings['short-tags'] = 'On';
+            $this->updateFpm = true;
         }
     }
 
@@ -232,9 +271,8 @@ class SetCommand extends _Command
     protected function enablePhalcon(&$settings, &$input)
     {
         if ($input->getOption('enable-phalcon')) {
-            $settings['phalcon'] = true;
-
-            //TODO: Enable Phalcon
+            $settings['phalcon'] = 'On';
+            $this->updateFpm = true;
         }
     }
     
@@ -246,9 +284,8 @@ class SetCommand extends _Command
     protected function enableYaf(&$settings, &$input)
     {
         if ($input->getOption('enable-yaf')) {
-            $settings['yaf'] = true;
-
-            //TODO: Enable Yaf
+            $settings['yaf'] = 'On';
+            $this->updateFpm = true;
         }
     }
 
@@ -260,9 +297,8 @@ class SetCommand extends _Command
     protected function disableShortTags(&$settings, &$input)
     {
         if ($input->getOption('disable-short-tags')) {
-            $settings['short-tags'] = false;
-
-            //TODO: Disable PHP Short Tags
+            $settings['short-tags'] = 'Off';
+            $this->updateFpm = true;
         }
     }
 
@@ -274,9 +310,8 @@ class SetCommand extends _Command
     protected function disablePhalcon(&$settings, &$input)
     {
         if ($input->getOption('disable-phalcon')) {
-            $settings['phalcon'] = false;
-
-            //TODO: Disable Phalcon
+            $settings['phalcon'] = 'Off';
+            $this->updateFpm = true;
         }
     }
     
@@ -288,9 +323,8 @@ class SetCommand extends _Command
     protected function disableYaf(&$settings, &$input)
     {
         if ($input->getOption('disable-yaf')) {
-            $settings['yaf'] = false;
-
-            //TODO: Disable Yaf
+            $settings['yaf'] = 'Off';
+            $this->updateFpm = true;
         }
     }
 }

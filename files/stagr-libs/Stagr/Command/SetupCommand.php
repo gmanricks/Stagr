@@ -54,8 +54,9 @@ class SetupCommand extends _Command
         }
 
         $setup = new Setup($appName, $output, $this);
-        $app = $this->getApplication()->getContainer();
         $setup->initEmailAndSsh();
+
+        $app = $this->getApplication()->getContainer();
 
         //Set Defaults
         $defaults = array(
@@ -66,10 +67,10 @@ class SetupCommand extends _Command
              'memory-limit' => '64M',
               'upload-size' => '128M',
                 'post-size' => '128M',
-               'short-tags' => 'ON',
+               'short-tags' => 'On',
          'output-buffering' => 4096,
-                  'phalcon' => false,
-                      'yaf' => false
+                  'phalcon' => 'Off',
+                      'yaf' => 'Off'
         );
 
         $app->configParam($appName, $defaults);
