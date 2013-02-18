@@ -61,7 +61,7 @@ class SetCommand extends _Command
         $appName = $input->getArgument('app');
         $app = $this->getApplication()->getContainer();
         $settings = (is_array($app->configParam($app))) ? $app->configParam($app) : array();
-        
+
         // proccess CLI options
         $this->setEnviromentVars($settings, $input);
         $this->setWebcall($settings, $input);
@@ -83,7 +83,7 @@ class SetCommand extends _Command
     }
 
     /**
-     * Function for checking and setting PHP's env vars 
+     * Function for checking and setting PHP's env vars
      *
      * @param  array $settings - app's Settings arr
      */
@@ -237,7 +237,7 @@ class SetCommand extends _Command
             //TODO: Enable Phalcon
         }
     }
-    
+
     /**
      * Function for checking and enabling Yaf
      *
@@ -279,7 +279,7 @@ class SetCommand extends _Command
             //TODO: Disable Phalcon
         }
     }
-    
+
     /**
      * Function for checking and disabling Yaf
      *
