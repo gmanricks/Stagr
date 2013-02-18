@@ -56,6 +56,22 @@ class SetupCommand extends _Command
         $setup = new Setup($appName, $output, $this);
         $setup->initEmailAndSsh();
 
+        //Set Defaults
+        $defaults = array(
+                      'env' => array(),
+                  'webcall' => false,
+                 'timezone' => 'Europe/Berlin',
+                'exec-time' => 300,
+             'memory-limit' => '64M',
+              'upload-size' => '128M',
+                'post-size' => '128M',
+        'enable-short-tags' => 'ON',
+         'output-buffering' => 4096,
+           'enable-phalcon' => false,
+               'enable-yaf' => false
+        );
+        $this->configParam($appName, $defaults);
+
         // setup all
         $output->writeln("\n\nSetup {$appName}\n----------");
 
@@ -77,6 +93,4 @@ class SetupCommand extends _Command
         $setup->printMySQLInfo();
         $output->writeln("\n");
     }
-
-
 }

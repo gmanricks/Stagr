@@ -62,20 +62,20 @@ class SetCommand extends _Command
         $settings = (is_array($this->configParam($app))) ? $this->configParam($app) : array();
         
         // proccess CLI options
-        $this->setEnviromentVars(&$settings);
-        $this->setWebcall(&$settings);
-        $this->setTimezone(&$settings);
-        $this->setExecTime(&$settings);
-        $this->setMemoryLimit(&$settings);
-        $this->setUploadSize(&$settings);
-        $this->setPostSize(&$settings);
-        $this->setOutputBuffering(&$settings);
-        $this->enableShortTags(&$settings);
-        $this->enablePhalcon(&$settings);
-        $this->enableYaf(&$settings);
-        $this->disableShortTags(&$settings);
-        $this->disablePhalcon(&$settings);
-        $this->disableYaf(&$settings);
+        $settings = $this->setEnviromentVars($settings);
+        $settings = $this->setWebcall($settings);
+        $settings = $this->setTimezone($settings);
+        $settings = $this->setExecTime($settings);
+        $settings = $this->setMemoryLimit($settings);
+        $settings = $this->setUploadSize($settings);
+        $settings = $this->setPostSize($settings);
+        $settings = $this->setOutputBuffering($settings);
+        $settings = $this->enableShortTags($settings);
+        $settings = $this->enablePhalcon($settings);
+        $settings = $this->enableYaf($settings);
+        $settings = $this->disableShortTags($settings);
+        $settings = $this->disablePhalcon($settings);
+        $settings = $this->disableYaf($settings);
 
         // save settings
         $this->configParam($app, $settings);
@@ -86,7 +86,7 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setEnviromentVars(&$settings)
+    protected function setEnviromentVars($settings)
     {
         if ($env = $input->getOption('env')) {
             //TODO: Do some input validation
@@ -95,6 +95,7 @@ class SetCommand extends _Command
 
             //TODO: Set the PHP env vars foreach
         }
+        return $settings;
     }
 
     /**
@@ -102,7 +103,7 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setWebcall(&$settings)
+    protected function setWebcall($settings)
     {
         if ($webcall = $input->getOption('webcall')) {
             //TODO: Test if valid URL Maybe?
@@ -111,6 +112,7 @@ class SetCommand extends _Command
 
             //TODO: Update GIT post-recieve hook, or make hook read from Yaml file
         }
+        return $settings;
     }
 
     /**
@@ -118,7 +120,7 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setTimezone(&$settings)
+    protected function setTimezone($settings)
     {
         if ($timezone = $input->getOption('timezone')) {
             //TODO: Make sure timezone is valid for PHP
@@ -127,6 +129,7 @@ class SetCommand extends _Command
 
             //TODO: Update PHP's Timezone
         }
+        return $settings;
     }
 
     /**
@@ -134,7 +137,7 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setExecTime(&$settings)
+    protected function setExecTime($settings)
     {
         if ($execTime = $input->getOption('exec-time')) {
             //TODO: Make sure it's valid PHP exec-time
@@ -143,6 +146,7 @@ class SetCommand extends _Command
 
             //TODO: Update PHP's max exec time
         }
+        return $settings;
     }
 
     /**
@@ -150,7 +154,7 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setMemoryLimit(&$settings)
+    protected function setMemoryLimit($settings)
     {
         if ($memoryLimit = $input->getOption('memory-limit')) {
             //TODO: Make sure it's valid PHP memory limit
@@ -159,6 +163,7 @@ class SetCommand extends _Command
 
             //TODO: Update PHP's max memory limit
         }
+        return $settings;
     }
 
     /**
@@ -166,7 +171,7 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setUploadSize(&$settings)
+    protected function setUploadSize($settings)
     {
         if ($uploadSize = $input->getOption('upload-size')) {
             //TODO: Make sure it's valid PHP upload size
@@ -175,6 +180,7 @@ class SetCommand extends _Command
 
             //TODO: Update PHP's max upload size
         }
+        return $settings;
     }
 
     /**
@@ -182,7 +188,7 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setPostSize(&$settings)
+    protected function setPostSize($settings)
     {
         if ($postSize = $input->getOption('post-size')) {
             //TODO: Make sure it's valid PHP POST size
@@ -191,6 +197,7 @@ class SetCommand extends _Command
 
             //TODO: Update PHP's max POST size
         }
+        return $settings;
     }
 
     /**
@@ -198,7 +205,7 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setOutputBuffering(&$settings)
+    protected function setOutputBuffering($settings)
     {
         if ($outputBuffering = $input->getOption('output-buffering')) {
             //TODO: Make sure it's valid PHP output buffering size
@@ -207,6 +214,7 @@ class SetCommand extends _Command
 
             //TODO: Update PHP's POST output buffering size
         }
+        return $settings;
     }
 
     /**
@@ -214,13 +222,14 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function enableShortTags(&$settings)
+    protected function enableShortTags($settings)
     {
         if ($input->getOption('enable-short-tags')) {
             $settings['enable-short-tags'] = true;
 
             //TODO: Enable PHP Short Tags
         }
+        return $settings;
     }
 
     /**
@@ -228,13 +237,14 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function enablePhalcon(&$settings)
+    protected function enablePhalcon($settings)
     {
         if ($input->getOption('enable-phalcon')) {
             $settings['enable-phalcon'] = true;
 
             //TODO: Enable Phalcon
         }
+        return $settings;
     }
     
     /**
@@ -242,13 +252,14 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function enableYaf(&$settings)
+    protected function enableYaf($settings)
     {
         if ($input->getOption('enable-yaf')) {
             $settings['enable-yaf'] = true;
 
             //TODO: Enable Yaf
         }
+        return $settings;
     }
 
     /**
@@ -256,13 +267,14 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function disableShortTags(&$settings)
+    protected function disableShortTags($settings)
     {
         if ($input->getOption('disable-short-tags')) {
             $settings['disable-short-tags'] = true;
 
             //TODO: Disable PHP Short Tags
         }
+        return $settings;
     }
 
     /**
@@ -270,13 +282,14 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function disablePhalcon(&$settings)
+    protected function disablePhalcon($settings)
     {
         if ($input->getOption('disable-phalcon')) {
             $settings['disable-phalcon'] = true;
 
             //TODO: Disable Phalcon
         }
+        return $settings;
     }
     
     /**
@@ -284,12 +297,13 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function disableYaf(&$settings)
+    protected function disableYaf($settings)
     {
         if ($input->getOption('disable-yaf')) {
             $settings['disable-yaf'] = true;
 
             //TODO: Disable Yaf
         }
+        return $settings;
     }
 }
