@@ -63,7 +63,7 @@ class SetCommand extends _Command
         // initialize some variables
         $appName = $input->getArgument('app');
         $app = $this->getApplication()->getContainer();
-        $settings = (is_array($app->configParam($app))) ? $app->configParam($app) : array();
+        $settings = (is_array($app->configParam($appName))) ? $app->configParam($appName) : array();
     
         //Initialize rebuild booleans
         $this->updateFpm = false;
@@ -257,7 +257,7 @@ class SetCommand extends _Command
      */
     protected function enableShortTags(&$settings, &$input)
     {
-        if ($input->getOption('short-tags')) {
+        if ($input->getOption('enable-short-tags')) {
             $settings['short-tags'] = 'On';
             $this->updateFpm = true;
         }
