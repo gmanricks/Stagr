@@ -136,7 +136,7 @@ LOGO;
 
         //Create Vhost File
         $this->output->write('Creating Site File ... ');
-        file_put_contents("/etc/apache2/sites-available/" . $this->appName, $this->generateVhostContent());
+        $this->rebuildVhost();
         $this->output->writeln('<info>OK</info>');
 
         //Symlink Vhost to sites-enabled
@@ -147,7 +147,7 @@ LOGO;
 
         //Create FPM Config
         $this->output->write('Creating FPM Config ... ');
-        file_put_contents("/etc/php5/fpm/pool.d/$this->appName.conf", $this->generateFpmConfig());
+        $this->rebuildFpmConfig();
         $this->output->writeln('<info>OK</info>');
 
         //Create PHP/FPM prepend file
@@ -267,7 +267,6 @@ LOGO;
      */
     public function rebuildVhost()
     {
-        unlink("/etc/apache2/sites-available/" . $this->appName);
         file_put_contents("/etc/apache2/sites-available/" . $this->appName, $this->generateVhostContent());
     }
 
@@ -276,7 +275,6 @@ LOGO;
      */
     public function rebuildFpmConfig()
     {
-        unlink("/etc/php5/fpm/pool.d/" . $this->appName . ".conf");
         file_put_contents("/etc/php5/fpm/pool.d/" . $this->appName . ".conf", $this->generateFpmConfig());
     }
 
@@ -393,11 +391,11 @@ SITE;
     protected function generateFpmConfig()
     {
         $settings = $this->app->configParam($this->appName);
-        $memoryLimit = $settings['memory-limit'];
-        $execTime = $settings['exec-time'];
-        $uploadSize = $settings['upload-size'];
-        $shortTags = $settings['short-tags'];
-        $timezone = $settings['timezone'];
+
+        $phpAppSettings = '';
+        foreach (['timezone', 'exec-time', 'memory-limit', 'upload-size', 'post-size', 'output-buffering'] as $valName) {
+            $phpAppSettings .= sprintf('php_value[%s] = "%s"', preg_replace('/\-/', '_', $valName), $settings[$valName]). "\n";
+        }
         return <<<FPMCONF
 [{$this->appName}]
 listen = /var/fpm/socks/{$this->appName}.sock
@@ -420,16 +418,15 @@ php_value[open_basedir] = ""
 php_value[include_path] = ".:/usr/share/php:/var/www/web/{$this->appName}/htdocs"
 php_value[upload_tmp_dir] = "/tmp"
 php_value[session.save_path] = "/tmp"
-php_value[apc.shm_size] = "$memoryLimit"
+php_value[apc.shm_size] = "32M"
 php_value[auto_prepend_file] = "/var/fpm/prepend/{$this->appName}/prepend.php"
-php_value[max_execution_time] = "$execTime"
-php_value[upload_max_filesize] = "$uploadSize"
 php_value[default_charset] = "UTF-8"
-php_value[short_open_tag] = "$shortTags"
-;php_value[date.timezone] = "$timezone"
+$phpAppSettings
+
 
 FPMCONF;
     }
+
 
 
     /**

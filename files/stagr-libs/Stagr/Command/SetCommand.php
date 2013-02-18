@@ -63,12 +63,14 @@ class SetCommand extends _Command
         // initialize some variables
         $appName = $input->getArgument('app');
         $app = $this->getApplication()->getContainer();
+
         $settings = (is_array($app->configParam($appName))) ? $app->configParam($appName) : array();
     
         //Initialize rebuild booleans
         $this->updateFpm = false;
         $this->updateApache = false;
         $this->updateGit = false;
+
 
         // proccess CLI options
         $this->setEnviromentVars($settings, $input);
@@ -105,7 +107,7 @@ class SetCommand extends _Command
     }
 
     /**
-     * Function for checking and setting PHP's env vars 
+     * Function for checking and setting PHP's env vars
      *
      * @param  array $settings - app's Settings arr
      */
@@ -275,7 +277,7 @@ class SetCommand extends _Command
             $this->updateFpm = true;
         }
     }
-    
+
     /**
      * Function for checking and enabling Yaf
      *
@@ -314,7 +316,7 @@ class SetCommand extends _Command
             $this->updateFpm = true;
         }
     }
-    
+
     /**
      * Function for checking and disabling Yaf
      *
