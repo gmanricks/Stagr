@@ -54,6 +54,7 @@ class SetupCommand extends _Command
         }
 
         $setup = new Setup($appName, $output, $this);
+        $app = $this->getApplication()->getContainer();
         $setup->initEmailAndSsh();
 
         //Set Defaults
@@ -70,7 +71,8 @@ class SetupCommand extends _Command
            'enable-phalcon' => false,
                'enable-yaf' => false
         );
-        $this->configParam($appName, $defaults);
+
+        $app->configParam($appName, $defaults);
 
         // setup all
         $output->writeln("\n\nSetup {$appName}\n----------");
