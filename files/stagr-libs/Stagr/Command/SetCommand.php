@@ -40,6 +40,7 @@ class SetCommand extends _Command
             ->addOption('timezone', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s Timezone')
             ->addOption('exec-time', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max execution time')
             ->addOption('memory-limit', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s memory Limit')
+            ->addOption('apc-size', null, InputOption::VALUE_REQUIRED, 'This property sets APC\'s Cache size')
             ->addOption('upload-size', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max upload size')
             ->addOption('post-size', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max post size')
             ->addOption('output-buffering', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s output buffering size')
@@ -82,6 +83,7 @@ class SetCommand extends _Command
         $this->enableShortTags($settings, $input);
         $this->disableShortTags($settings, $input);
         $this->setDocRoot($settings, $input);
+        $this->setApcSize($settings, $input);
         $this->restoreDefaults($settings, $input);
 
         // save settings
@@ -190,7 +192,23 @@ class SetCommand extends _Command
             //Validate that it is a valid memory size parameter
             if (preg_match('/^[0-9]+[KMG]?$/', $memoryLimit)) {
                 $settings['memory_limit'] = $memoryLimit;
-                $settings['apc-shm_size'] = $memoryLimit;
+                $this->updateFpm = true;
+            }
+        }
+    }
+
+    /**
+     * Function for checking and setting APC Cache size
+     *
+     * @param  array $settings - app's Settings arr
+     */
+    protected function setApcSize(&$settings, &$input)
+    {
+        if ($apcSize = $input->getOption('apc-size')) {
+            
+            //Validate that it is a valid memory size parameter
+            if (preg_match('/^[0-9]+[KMG]?$/', $apcSize)) {
+                $settings['apc-shm_size'] = $apcSize;
                 $this->updateFpm = true;
             }
         }
