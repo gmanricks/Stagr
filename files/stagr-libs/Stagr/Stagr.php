@@ -78,6 +78,7 @@ class Stagr extends \Cilex\Application
     {
         if (isset($this->config[$name])) {
             unset($this->config[$name]);
+            file_put_contents(Setup::STAGR_HOME_DIR. '/.stagr', yaml_emit($this->config));
             return true;
         }
         return false;
