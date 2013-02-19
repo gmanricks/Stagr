@@ -24,7 +24,7 @@ class SelfUpdateCommand extends _Command
 {
     const DEFAULT_STAGR_REPO   = 'https://github.com/gmanricks/Stagr';
     const DEFAULT_STAGR_BRANCH = 'master';
-    const DEFAULT_STAGR_DIR    = '/opt/stagr/repo';
+    const DEFAULT_STAGR_DIR    = '/vagrant';
     const STAGR_INSTALL_DIR    = '/opt/stagr/lib/Stagr';
     const STAGR_EXEC_FILE      = '/usr/bin/stagr';
 
@@ -50,14 +50,35 @@ class SelfUpdateCommand extends _Command
         if (!is_dir($stagrDir)) {
             $output->writeln('<info>Clone Stagr</info>');
             exec("mkdir -p $stagrDirEsc");
-            exec("cd $stagrDirEsc && git clone $stagrRepo . && git checkout $stagrBranch 2>&1");
+            chdir($stagrDir);
+            exec("git clone $stagrRepo . && git checkout $stagrBranch 2>&1");
             $updated = true;
         }
 
         // just update
         else {
+            chdir($stagrDir);
             $output->writeln('<info>Try update Stagr</info>');
-            $updated = exec("cd $stagrDir && git checkout $stagrBranch 2>&1 && git pull | grep 'Already up-to-date.' | wc -l") == "0";
+            $checkRemote = exec("git remote | grep ' stagr-update\$' | wc -l");
+            if (!$checkRemote) {
+                exec("git remote add stagr-update $stagrRepo");
+            } else {
+                exec("git remote set-url stagr-update $stagrRepo");
+            }
+            $checkBranch = exec("git branch -a | grep ' '$stagrBranch'\$' |Wc -l");
+            if (!$checkBranch) {
+                $switchResponse = exec("git checkout -b $stagrBranch stagr-update/$stagrBranch && echo OK || echo FAIL");
+                if (strpos($switchResponse, 'FAIL') !== false) {
+                    throw new \RuntimeException("Failed to switch to branch '$stagrBranch'");
+                }
+            } else {
+                exec("git checkout $stagrBranch");
+            }
+            $pullResponse = exec("git pull stagr-update $stagrBranch && echo OK || echo FAIL")
+            if (strpos($pullResponse, 'FAIL') !== false) {
+                throw new \RuntimeException("Failed pull '$stagrBranch' from '$stagrRepo'");
+            }
+            echo 'PULL RESPONSE "'. $pullResponse. '"'. "\n";
         }
 
         // having updates
