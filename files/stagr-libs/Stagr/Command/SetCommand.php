@@ -259,7 +259,7 @@ class SetCommand extends _Command
     protected function setDocRoot(&$settings, &$input)
     {
         if ($docRoot = $input->getOption('doc-root')) {
-            if (preg_match('/^[0-9a-zA-Z_\-]+$/', $docRoot)) {
+            if (preg_match('/^[0-9a-zA-Z_\-\/]+$/', $docRoot)) {
                 $settings['doc-root'] = $docRoot;
                 $this->updateApache = true;
             }
