@@ -16,6 +16,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Stagr\Tools\Cmd;
 
 /**
  * Updates Stagr from latest git repository
@@ -49,9 +50,9 @@ class SelfUpdateCommand extends _Command
         // dir not existing -> clone now
         if (!is_dir($stagrDir)) {
             $output->writeln('<info>Clone Stagr</info>');
-            exec("mkdir -p $stagrDirEsc");
+            Cmd::run("mkdir -p $stagrDirEsc");
             chdir($stagrDir);
-            exec("git clone $stagrRepo . && git checkout $stagrBranch 2>&1");
+            Cmd::run("git clone $stagrRepo . && git checkout $stagrBranch 2>&1");
             $updated = true;
         }
 
@@ -59,23 +60,23 @@ class SelfUpdateCommand extends _Command
         else {
             chdir($stagrDir);
             $output->writeln('<info>Try update Stagr</info>');
-            $checkRemote = exec("git remote | grep ' stagr-update\$' | wc -l");
+            $checkRemote = Cmd::run("git remote | grep '^stagr-update\$' | wc -l");
             if (!$checkRemote) {
-                exec("git remote add stagr-update $stagrRepo");
+                Cmd::run("git remote add stagr-update $stagrRepo");
             } else {
-                exec("git remote set-url stagr-update $stagrRepo");
+                Cmd::run("git remote set-url stagr-update $stagrRepo");
             }
-            $checkBranch = exec("git branch -a | grep ' '$stagrBranch'\$' |Wc -l");
+            $checkBranch = Cmd::run("git branch -a | grep ' '$stagrBranch'\$' | wc -l");
             if (!$checkBranch) {
-                $switchResponse = exec("git checkout -b $stagrBranch stagr-update/$stagrBranch && echo OK || echo FAIL");
-                if (strpos($switchResponse, 'FAIL') !== false) {
-                    throw new \RuntimeException("Failed to switch to branch '$stagrBranch'");
+                if (!Cmd::runCheck("git checkout -b $stagrBranch stagr-update/$stagrBranch")) {
+                    throw new \RuntimeException("Failed to switch to branch '$stagrBranch'.");
                 }
             } else {
-                exec("git checkout $stagrBranch");
+                if (!Cmd::runCheck("git checkout $stagrBranch")) {
+                    throw new \RuntimeException("Failed to switch to branch '$stagrBranch'. Do you have uncommited changes?");
+                }
             }
-            $pullResponse = exec("git pull stagr-update $stagrBranch && echo OK || echo FAIL")
-            if (strpos($pullResponse, 'FAIL') !== false) {
+            if (!Cmd::runCheck("git pull stagr-update $stagrBranch && echo OK || echo FAIL")) {
                 throw new \RuntimeException("Failed pull '$stagrBranch' from '$stagrRepo'");
             }
             echo 'PULL RESPONSE "'. $pullResponse. '"'. "\n";
@@ -84,12 +85,12 @@ class SelfUpdateCommand extends _Command
         // having updates
         if ($updated) {
             $output->writeln('<info>Stagr updated -> re-init</info>');
-            $res = exec("rsync -ap --delete-after --exclude=.git $stagrDir/files/stagr-libs/Stagr/ ". self::STAGR_INSTALL_DIR. "/ 1>/dev/null 2>/dev/null && echo OK || echo FAIL");
+            $res = Cmd::run("rsync -ap --delete-after --exclude=.git $stagrDir/files/stagr-libs/Stagr/ ". self::STAGR_INSTALL_DIR. "/ 1>/dev/null 2>/dev/null && echo OK || echo FAIL");
             if ($res != "OK") {
                 throw new \RuntimeException("Failed to sync Stagr after update");
             }
-            exec("cp $stagrDir/files/cilex.phar ". self::STAGR_INSTALL_DIR. "/cilex.phar");
-            exec("cp $stagrDir/files/stagr.php ". self::STAGR_EXEC_FILE);
+            Cmd::run("cp $stagrDir/files/cilex.phar ". self::STAGR_INSTALL_DIR. "/cilex.phar");
+            Cmd::run("cp $stagrDir/files/stagr.php ". self::STAGR_EXEC_FILE);
 
             $newArgs = $_SERVER['argv'];
             array_shift($newArgs);
