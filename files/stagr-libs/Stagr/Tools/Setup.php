@@ -337,6 +337,7 @@ LOGO;
     {
         $email = $this->app->configParam('email');
         $settings = $this->app->configParam($this->appName);
+        $docRoot = $settings['doc-root'];
         $vHost = <<<SITE
 
 FastCgiExternalServer /var/www/web/{$this->appName}/redir/php -socket /var/fpm/socks/{$this->appName}.sock -idle-timeout 305 -flush
@@ -344,7 +345,7 @@ FastCgiExternalServer /var/www/web/{$this->appName}/redir/php -socket /var/fpm/s
 <VirtualHost *:80>
     ServerAdmin $email
     ServerName {$this->appName}.dev
-    DocumentRoot /var/www/web/{$this->appName}/htdocs
+    DocumentRoot /var/www/web/{$this->appName}/htdocs/$docRoot
 
     SetEnv APP_NAME "{$this->appName}"
 
@@ -362,9 +363,9 @@ SITE;
     </FilesMatch>
     AddHandler php5-{$this->appName}-fcgi .php
     Action php5-{$this->appName}-fcgi /.ctrl/~~~php
-    Alias /.ctrl/~~~php /var/www/web/{$this->appName}/redir/php
+    Alias /.ctrl/~~~php /var/www/web/{$this->appName}/redir/php/$docRoot
 
-    <Directory /var/www/web/{$this->appName}/htdocs>
+    <Directory /var/www/web/{$this->appName}/htdocs/$docRoot>
         # PathInfo for PHP-FPM
         RewriteEngine On
         RewriteCond %{REQUEST_URI} \.php/ [NC]
@@ -393,8 +394,8 @@ SITE;
         $settings = $this->app->configParam($this->appName);
 
         $phpAppSettings = '';
-        foreach (['timezone', 'exec-time', 'memory-limit', 'upload-size', 'post-size', 'output-buffering'] as $valName) {
-            $phpAppSettings .= sprintf('php_value[%s] = "%s"', preg_replace('/\-/', '_', $valName), $settings[$valName]). "\n";
+        foreach (['date-timezone', 'max_execution_time', 'upload_max_filesize', 'memory_limit', 'apc-shm_size', 'post_max_size', 'short_open_tag', 'output_buffering'] as $valName) {
+            $phpAppSettings .= sprintf('php_value[%s] = "%s"', preg_replace('/\-/', '.', $valName), $settings[$valName]). "\n";
         }
         return <<<FPMCONF
 [{$this->appName}]

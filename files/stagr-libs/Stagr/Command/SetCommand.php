@@ -43,12 +43,10 @@ class SetCommand extends _Command
             ->addOption('upload-size', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max upload size')
             ->addOption('post-size', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max post size')
             ->addOption('output-buffering', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s output buffering size')
+            ->addOption('doc-root', null, InputOption::VALUE_REQUIRED, 'This property sets the document root')
             ->addOption('enable-short-tags', null, InputOption::VALUE_NONE, 'Property to enable PHP\'s short open tag')
-            ->addOption('enable-phalcon', null, InputOption::VALUE_NONE, 'Property to enable the Phalcon framework')
-            ->addOption('enable-yaf', null, InputOption::VALUE_NONE, 'Property to enable the Yaf framework')
             ->addOption('disable-short-tags', null, InputOption::VALUE_NONE, 'Property to disable PHP\'s short open tag')
-            ->addOption('disable-phalcon', null, InputOption::VALUE_NONE, 'Property to disable the Phalcon framework')
-            ->addOption('disable-yaf', null, InputOption::VALUE_NONE, 'Property to disable the Yaf framework');
+            ->addOption('restore-defaults', null, InputOption::VALUE_NONE, 'Use this option to restore all defaults');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -82,11 +80,9 @@ class SetCommand extends _Command
         $this->setPostSize($settings, $input);
         $this->setOutputBuffering($settings, $input);
         $this->enableShortTags($settings, $input);
-        $this->enablePhalcon($settings, $input);
-        $this->enableYaf($settings, $input);
         $this->disableShortTags($settings, $input);
-        $this->disablePhalcon($settings, $input);
-        $this->disableYaf($settings, $input);
+        $this->setDocRoot($settings, $input);
+        $this->restoreDefaults($settings, $input);
 
         // save settings
         $app->configParam($appName, $settings);
@@ -162,7 +158,7 @@ class SetCommand extends _Command
             $timezoneValidate = timezone_open($timezone);
             
             if ($timezoneValidate) {
-                $settings['timezone'] = $timezone;
+                $settings['date-timezone'] = $timezone;
                 $this->updateFpm = true;
             }
         }
@@ -179,7 +175,7 @@ class SetCommand extends _Command
             
             //Validates that it's a number
             if (is_numeric($execTime)) {
-                $settings['exec-time'] = max(intval($execTime), 0);
+                $settings['max_execution_time'] = max(intval($execTime), 0);
                 $this->updateFpm = true;
             }
         }
@@ -196,7 +192,8 @@ class SetCommand extends _Command
             
             //Validate that it is a valid memory size parameter
             if (preg_match('/^[0-9]+[KMG]?$/', $memoryLimit)) {
-                $settings['memory-limit'] = $memoryLimit;
+                $settings['memory_limit'] = $memoryLimit;
+                $settings['apc-shm_size'] = $memoryLimit;
                 $this->updateFpm = true;
             }
         }
@@ -213,7 +210,7 @@ class SetCommand extends _Command
 
             //Validate that it is a valid upload size parameter
             if (preg_match('/^[0-9]+[KMG]?$/', $uploadSize)) {
-                $settings['upload-size'] = $uploadSize;
+                $settings['upload_max_filesize'] = $uploadSize;
                 $this->updateFpm = true;
             }
         }
@@ -230,7 +227,7 @@ class SetCommand extends _Command
             
             //Validate that it is a valid post size parameter
             if (preg_match('/^[0-9]+[KMG]?$/', $postSize)) {
-                $settings['post-size'] = $postSize;
+                $settings['post_max_size'] = $postSize;
                 $this->updateFpm = true;
             }
         }
@@ -244,11 +241,28 @@ class SetCommand extends _Command
     protected function setOutputBuffering(&$settings, &$input)
     {
         if ($outputBuffering = $input->getOption('output-buffering')) {
-            //TODO: Make sure it's valid PHP output buffering size
+            if (is_numeric($outputBuffering)) {
+                $settings['output_buffering'] = intval($outputBuffering);
+                $this->updateFpm = true;
+            } elseif ($outputBuffering === "On" || $outputBuffering === "Off") {
+                $settings['output_buffering'] = $outputBuffering;
+                $this->updateFpm = true;
+            }
+        }
+    }
 
-            $settings['output-buffering'] = $outputBuffering;
-
-            //TODO: Update PHP's POST output buffering size
+    /**
+     * Function for setting doc root
+     *
+     * @param  array $settings - app's Settings arr
+     */
+    protected function setDocRoot(&$settings, &$input)
+    {
+        if ($docRoot = $input->getOption('doc-root')) {
+            if (preg_match('/^[0-9a-zA-Z_\-]+$/', $docRoot)) {
+                $settings['doc-root'] = $docRoot;
+                $this->updateApache = true;
+            }
         }
     }
 
@@ -260,33 +274,7 @@ class SetCommand extends _Command
     protected function enableShortTags(&$settings, &$input)
     {
         if ($input->getOption('enable-short-tags')) {
-            $settings['short-tags'] = 'On';
-            $this->updateFpm = true;
-        }
-    }
-
-    /**
-     * Function for checking and enabling Phalcon
-     *
-     * @param  array $settings - app's Settings arr
-     */
-    protected function enablePhalcon(&$settings, &$input)
-    {
-        if ($input->getOption('enable-phalcon')) {
-            $settings['phalcon'] = 'On';
-            $this->updateFpm = true;
-        }
-    }
-
-    /**
-     * Function for checking and enabling Yaf
-     *
-     * @param  array $settings - app's Settings arr
-     */
-    protected function enableYaf(&$settings, &$input)
-    {
-        if ($input->getOption('enable-yaf')) {
-            $settings['yaf'] = 'On';
+            $settings['short_open_tag'] = 'On';
             $this->updateFpm = true;
         }
     }
@@ -299,34 +287,34 @@ class SetCommand extends _Command
     protected function disableShortTags(&$settings, &$input)
     {
         if ($input->getOption('disable-short-tags')) {
-            $settings['short-tags'] = 'Off';
+            $settings['short_open_tag'] = 'Off';
             $this->updateFpm = true;
         }
     }
 
     /**
-     * Function for checking and disabling Phalcon
+     * Function for checking and disabling PHP's short tags
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function disablePhalcon(&$settings, &$input)
+    protected function restoreDefaults(&$settings, &$input)
     {
-        if ($input->getOption('disable-phalcon')) {
-            $settings['phalcon'] = 'Off';
+        if ($input->getOption('restore-defaults')) {
+            $settings = array(
+                'env' => array(),
+                'webcall' => false,
+                'date-timezone' => 'Europe/Berlin',
+                'max_execution_time' => 300,
+                'memory_limit' => '64M',
+                'apc-shm_size' => '64M',
+                'upload_max_filesize' => '128M',
+                'post_max_size' => '128M',
+                'short_open_tag' => 'On',
+                'output_buffering' => 4096,
+                'doc-root' => ''
+            );
             $this->updateFpm = true;
-        }
-    }
-
-    /**
-     * Function for checking and disabling Yaf
-     *
-     * @param  array $settings - app's Settings arr
-     */
-    protected function disableYaf(&$settings, &$input)
-    {
-        if ($input->getOption('disable-yaf')) {
-            $settings['yaf'] = 'Off';
-            $this->updateFpm = true;
+            $this->updateApache = true;
         }
     }
 }

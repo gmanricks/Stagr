@@ -60,18 +60,19 @@ class SetupCommand extends _Command
 
         //Set Defaults
         $defaults = array(
-                      'env' => array(),
-                  'webcall' => false,
-                 'timezone' => 'Europe/Berlin',
-                'exec-time' => 300,
-             'memory-limit' => '64M',
-              'upload-size' => '128M',
-                'post-size' => '128M',
-               'short-tags' => 'On',
-         'output-buffering' => 4096,
-                  'phalcon' => 'Off',
-                      'yaf' => 'Off'
+            'env' => array(),
+            'webcall' => false,
+            'date-timezone' => 'Europe/Berlin',
+            'max_execution_time' => 300,
+            'memory_limit' => '64M',
+            'apc-shm_size' => '64M',
+            'upload_max_filesize' => '128M',
+            'post_max_size' => '128M',
+            'short_open_tag' => 'On',
+            'output_buffering' => 4096,
+            'doc-root' => ''
         );
+
 
         $app->configParam($appName, $defaults);
 
