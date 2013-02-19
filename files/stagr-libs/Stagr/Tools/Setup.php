@@ -350,9 +350,11 @@ FastCgiExternalServer /var/www/web/{$this->appName}/redir/php -socket /var/fpm/s
     SetEnv APP_NAME "{$this->appName}"
 
 SITE;
-
-        foreach ($settings['env'] as $key => $value) {
-            $vHost .= '    SetEnv ' . $key . '"' . $value . '"' . "\n";
+        for ($i = 0; $i < count($settings['env']); $i++) {
+            $row = $settings['env'][$i];
+            foreach ($row as $key => $value) {
+                $vHost .= '    SetEnv ' . $key . ' "' . $value . '"' . "\n";
+            }
         }
 
         $vHost .= <<<SITE

@@ -115,9 +115,6 @@ class SetCommand extends _Command
 
             foreach ($env as $str) {
                 $raw = explode("=", $str);
-                if (!count($raw) === 2) {
-                    $raw = explode(":", $str);
-                }
                 if (count($raw) === 2) {
                     array_push($vars, array($raw[0] => $raw[1]));
                 }
