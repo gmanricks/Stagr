@@ -22,7 +22,7 @@ namespace Stagr\Tools;
 class Cmd
 {
     /**
-     * Run command, possibly debug output
+     * Run command, possibly prints debug output if DEBUG env variable is set. Does nothing if DRYRUN env varabiale is set.
      *
      * @param string $cmd The command
      *
@@ -32,6 +32,9 @@ class Cmd
     {
         if (isset($_SERVER['DEBUG']) && $_SERVER['DEBUG'] > 0) {
             echo "DEBUG::run: \"$cmd\"\n";
+        }
+        if (isset($_SERVER['DRYRUN']) && $_SERVER['DRYRUN'] > 0) {
+            return "DRYRUN\n";
         }
         return exec($cmd);
     }
@@ -46,7 +49,7 @@ class Cmd
     public static function runCheck($cmd)
     {
         $res = self::run(sprintf('((%s) && echo OK || echo FAIL) | tail -1', $cmd));
-        return strpos($res, 'FAIL') === false;
+        return isset($_SERVER['DRYRUN']) && $_SERVER['DRYRUN'] > 0 ? true : strpos($res, 'FAIL') === false;
     }
 
 }
