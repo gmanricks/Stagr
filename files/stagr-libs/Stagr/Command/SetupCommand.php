@@ -58,23 +58,8 @@ class SetupCommand extends _Command
 
         $app = $this->getApplication()->getContainer();
 
-        //Set Defaults
-        $defaults = array(
-            'env' => array(),
-            'webcall' => false,
-            'date-timezone' => 'Europe/Berlin',
-            'max_execution_time' => 300,
-            'memory_limit' => '64M',
-            'apc-shm_size' => '64M',
-            'upload_max_filesize' => '128M',
-            'post_max_size' => '128M',
-            'short_open_tag' => 'On',
-            'output_buffering' => 4096,
-            'doc-root' => ''
-        );
-
-
-        $app->configParam($appName, $defaults);
+        // write app defaults
+        $app->configParam('apps.'. $appName, Setup::$DEFAULT_SETTINGS);
 
         // setup all
         $output->writeln("\n\nSetup {$appName}\n----------");

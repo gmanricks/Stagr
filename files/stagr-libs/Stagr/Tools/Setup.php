@@ -32,6 +32,27 @@ class Setup
     const STAGR_HOME_DIR = '/home/vagrant';
 
     /**
+     * @var Type
+     */
+    public static $DEFAULT_SETTINGS = array(
+        'env'      => array(),
+        'doc-root' => '',
+        'hooks'    => array(
+            'webcall'  => false,
+        ),
+        'php' => array(
+            'date-timezone'       => 'Europe/Berlin',
+            'max_execution_time'  => 300,
+            'memory_limit'        => '64M',
+            'apc-shm_size'        => '64M',
+            'upload_max_filesize' => '128M',
+            'post_max_size'       => '128M',
+            'short_open_tag'      => 'On',
+            'output_buffering'    => 4096
+        )
+    );
+
+    /**
      * @var \Symfony\Component\Console\Output\OutputInterface
      */
     private $output;
@@ -224,9 +245,9 @@ LOGO;
     {
         //Create folder for Bare Repo
         $this->output->write('Creating Bare Repository ... ');
-        $gitDir = self::STAGR_HOME_DIR. '/'. $this->appName. '.git';
+        $gitDir = self::STAGR_HOME_DIR. '/apps/'. $this->appName. '.git';
         if (!is_dir($gitDir)) {
-            mkdir($gitDir, 0755);
+            mkdir($gitDir, 0755, true);
         }
         chown($gitDir, "vagrant");
         chgrp($gitDir, "vagrant");
@@ -336,7 +357,7 @@ LOGO;
     protected function generateVhostContent()
     {
         $email = $this->app->configParam('email');
-        $settings = $this->app->configParam($this->appName);
+        $settings = $this->app->configParam('apps.'. $this->appName);
         $docRoot = $settings['doc-root'];
         $vHost = <<<SITE
 
@@ -393,11 +414,11 @@ SITE;
      */
     protected function generateFpmConfig()
     {
-        $settings = $this->app->configParam($this->appName);
+        $settings = $this->app->configParam('apps.'. $this->appName. '.php');
 
         $phpAppSettings = '';
-        foreach (['date-timezone', 'max_execution_time', 'upload_max_filesize', 'memory_limit', 'apc-shm_size', 'post_max_size', 'short_open_tag', 'output_buffering'] as $valName) {
-            $phpAppSettings .= sprintf('php_value[%s] = "%s"', preg_replace('/\-/', '.', $valName), $settings[$valName]). "\n";
+        foreach ($settings as $confName => $confValue) {
+            $phpAppSettings .= sprintf('php_value[%s] = "%s"', preg_replace('/\-/', '.', $confName), $confValue). "\n";
         }
         return <<<FPMCONF
 [{$this->appName}]

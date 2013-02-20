@@ -28,6 +28,9 @@ class SetCommand extends _Command
     private $updateFpm;
     private $updateApache;
     private $updateGit;
+    private $appName;
+    private $input;
+    private $app;
 
     protected function configure()
     {
@@ -60,11 +63,16 @@ class SetCommand extends _Command
         }
 
         // initialize some variables
-        $appName = $input->getArgument('app');
-        $app = $this->getApplication()->getContainer();
+        $this->appName = $appName = $input->getArgument('app');
+        $this->app = $app = $this->getApplication()->getContainer();
 
-        $settings = (is_array($app->configParam($appName))) ? $app->configParam($appName) : array();
-    
+        // set only for existing app
+        if (!$app->configParam('apps.'. $appName)) {
+            throw new \RuntimeException("App '$appName' does not exist. Create first with 'stagr setup \"$appName\"'");
+        }
+
+        $this->input = &$input;
+
         //Initialize rebuild booleans
         $this->updateFpm = false;
         $this->updateApache = false;
@@ -72,22 +80,19 @@ class SetCommand extends _Command
 
 
         // proccess CLI options
-        $this->setEnviromentVars($settings, $input);
-        $this->setWebcall($settings, $input);
-        $this->setTimezone($settings, $input);
-        $this->setExecTime($settings, $input);
-        $this->setMemoryLimit($settings, $input);
-        $this->setUploadSize($settings, $input);
-        $this->setPostSize($settings, $input);
-        $this->setOutputBuffering($settings, $input);
-        $this->enableShortTags($settings, $input);
-        $this->disableShortTags($settings, $input);
-        $this->setDocRoot($settings, $input);
-        $this->setApcSize($settings, $input);
-        $this->restoreDefaults($settings, $input);
-
-        // save settings
-        $app->configParam($appName, $settings);
+        $this->setEnviromentVars();
+        $this->setWebcall();
+        $this->setTimezone();
+        $this->setExecTime();
+        $this->setMemoryLimit();
+        $this->setUploadSize();
+        $this->setPostSize();
+        $this->setOutputBuffering();
+        $this->enableShortTags();
+        $this->disableShortTags();
+        $this->setDocRoot();
+        $this->setApcSize();
+        $this->restoreDefaults();
 
         $setup = new Setup($appName, $output, $this);
 
@@ -106,39 +111,31 @@ class SetCommand extends _Command
 
     /**
      * Function for checking and setting PHP's env vars
-     *
-     * @param  array $settings - app's Settings arr
      */
-    protected function setEnviromentVars(&$settings, &$input)
+    protected function setEnviromentVars()
     {
-        if ($env = $input->getOption('env')) {
-
+        if ($env = $this->input->getOption('env')) {
             $vars = array();
-
             foreach ($env as $str) {
                 $raw = explode("=", $str);
                 if (count($raw) === 2) {
                     array_push($vars, array($raw[0] => $raw[1]));
                 }
             }
-
-            $settings['env'] = $vars;
-
+            $this->app->configParam("apps.{$this->appName}.env", $vars);
             $this->updateApache = true;
         }
     }
 
     /**
      * Function for checking and setting Webcall trigger
-     *
-     * @param  array $settings - app's Settings arr
      */
-    protected function setWebcall(&$settings, &$input)
+    protected function setWebcall()
     {
-        if ($webcall = $input->getOption('webcall')) {
+        if (!is_null($webcall = $this->input->getOption('webcall'))) {
             //TODO: Test if valid URL Maybe?
 
-            $settings['webcall'] = $webcall;
+            $this->app->configParam("apps.{$this->appName}.hooks.webcall", $webcall ? 1 : 0);
 
             //TODO: Update GIT post-recieve hook, or make hook read from Yaml file
         }
@@ -149,15 +146,15 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setTimezone(&$settings, &$input)
+    protected function setTimezone()
     {
-        if ($timezone = $input->getOption('timezone')) {
-            
+        if ($timezone = $this->input->getOption('timezone')) {
+
             //Validate timezone
             $timezoneValidate = timezone_open($timezone);
-            
+
             if ($timezoneValidate) {
-                $settings['date-timezone'] = $timezone;
+                $this->app->configParam("apps.{$this->appName}.php.date-timezone", $timezone);
                 $this->updateFpm = true;
             }
         }
@@ -168,13 +165,13 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setExecTime(&$settings, &$input)
+    protected function setExecTime()
     {
-        if ($execTime = $input->getOption('exec-time')) {
-            
+        if ($execTime = $this->input->getOption('exec-time')) {
+
             //Validates that it's a number
             if (is_numeric($execTime)) {
-                $settings['max_execution_time'] = max(intval($execTime), 0);
+                $this->app->configParam("apps.{$this->appName}.php.max_execution_time", max(intval($execTime), 0));
                 $this->updateFpm = true;
             }
         }
@@ -185,13 +182,13 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setMemoryLimit(&$settings, &$input)
+    protected function setMemoryLimit()
     {
-        if ($memoryLimit = $input->getOption('memory-limit')) {
-            
+        if ($memoryLimit = $this->input->getOption('memory-limit')) {
+
             //Validate that it is a valid memory size parameter
             if (preg_match('/^[0-9]+[KMG]?$/', $memoryLimit)) {
-                $settings['memory_limit'] = $memoryLimit;
+                $this->app->configParam("apps.{$this->appName}.php.memory_limit", $memoryLimit);
                 $this->updateFpm = true;
             }
         }
@@ -202,13 +199,13 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setApcSize(&$settings, &$input)
+    protected function setApcSize()
     {
-        if ($apcSize = $input->getOption('apc-size')) {
-            
+        if ($apcSize = $this->input->getOption('apc-size')) {
+
             //Validate that it is a valid memory size parameter
             if (preg_match('/^[0-9]+[KMG]?$/', $apcSize)) {
-                $settings['apc-shm_size'] = $apcSize;
+                $this->app->configParam("apps.{$this->appName}.php.apc-shm_size", $apcSize);
                 $this->updateFpm = true;
             }
         }
@@ -219,13 +216,13 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setUploadSize(&$settings, &$input)
+    protected function setUploadSize()
     {
-        if ($uploadSize = $input->getOption('upload-size')) {
+        if ($uploadSize = $this->input->getOption('upload-size')) {
 
             //Validate that it is a valid upload size parameter
             if (preg_match('/^[0-9]+[KMG]?$/', $uploadSize)) {
-                $settings['upload_max_filesize'] = $uploadSize;
+                $this->app->configParam("apps.{$this->appName}.php.upload_max_filesize", $uploadSize);
                 $this->updateFpm = true;
             }
         }
@@ -236,13 +233,13 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setPostSize(&$settings, &$input)
+    protected function setPostSize()
     {
-        if ($postSize = $input->getOption('post-size')) {
-            
+        if ($postSize = $this->input->getOption('post-size')) {
+
             //Validate that it is a valid post size parameter
             if (preg_match('/^[0-9]+[KMG]?$/', $postSize)) {
-                $settings['post_max_size'] = $postSize;
+                $this->app->configParam("apps.{$this->appName}.php.post_max_size", $postSize);
                 $this->updateFpm = true;
             }
         }
@@ -253,14 +250,14 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setOutputBuffering(&$settings, &$input)
+    protected function setOutputBuffering()
     {
-        if ($outputBuffering = $input->getOption('output-buffering')) {
+        if ($outputBuffering = $this->input->getOption('output-buffering')) {
             if (is_numeric($outputBuffering)) {
-                $settings['output_buffering'] = intval($outputBuffering);
+                $this->app->configParam("apps.{$this->appName}.php.output_buffering", intval($outputBuffering));
                 $this->updateFpm = true;
             } elseif ($outputBuffering === "On" || $outputBuffering === "Off") {
-                $settings['output_buffering'] = $outputBuffering;
+                $this->app->configParam("apps.{$this->appName}.php.output_buffering", $outputBuffering);
                 $this->updateFpm = true;
             }
         }
@@ -271,11 +268,11 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setDocRoot(&$settings, &$input)
+    protected function setDocRoot()
     {
-        if ($docRoot = $input->getOption('doc-root')) {
+        if ($docRoot = $this->input->getOption('doc-root')) {
             if (preg_match('/^[0-9a-zA-Z_\-\/]+$/', $docRoot)) {
-                $settings['doc-root'] = $docRoot;
+                $this->app->configParam("apps.{$this->appName}.doc-root", $docRoot);
                 $this->updateApache = true;
             }
         }
@@ -286,10 +283,10 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function enableShortTags(&$settings, &$input)
+    protected function enableShortTags()
     {
-        if ($input->getOption('enable-short-tags')) {
-            $settings['short_open_tag'] = 'On';
+        if ($this->input->getOption('enable-short-tags')) {
+            $this->app->configParam("apps.{$this->appName}.php.short_open_tag", "On");
             $this->updateFpm = true;
         }
     }
@@ -299,10 +296,10 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function disableShortTags(&$settings, &$input)
+    protected function disableShortTags()
     {
-        if ($input->getOption('disable-short-tags')) {
-            $settings['short_open_tag'] = 'Off';
+        if ($this->input->getOption('disable-short-tags')) {
+            $this->app->configParam("apps.{$this->appName}.php.short_open_tag", "Off");
             $this->updateFpm = true;
         }
     }
@@ -312,22 +309,10 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function restoreDefaults(&$settings, &$input)
+    protected function restoreDefaults()
     {
-        if ($input->getOption('restore-defaults')) {
-            $settings = array(
-                'env' => array(),
-                'webcall' => false,
-                'date-timezone' => 'Europe/Berlin',
-                'max_execution_time' => 300,
-                'memory_limit' => '64M',
-                'apc-shm_size' => '64M',
-                'upload_max_filesize' => '128M',
-                'post_max_size' => '128M',
-                'short_open_tag' => 'On',
-                'output_buffering' => 4096,
-                'doc-root' => ''
-            );
+        if ($this->input->getOption('restore-defaults')) {
+            $this->app->configParam("apps.{$this->appName}", Setup::$DEFAULT_SETTINGS, true);
             $this->updateFpm = true;
             $this->updateApache = true;
         }
