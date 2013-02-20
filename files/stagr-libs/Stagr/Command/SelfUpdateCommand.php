@@ -82,7 +82,7 @@ class SelfUpdateCommand extends _Command
         }
 
         // having updates
-        if ($updated || (isset($_SERVER['FORCE_UPDATE']) && $_SERVER['FORCE_UPDATE'] > 0)) {
+        if ($updated) {
             $output->writeln('<info>Stagr updated -> re-init</info>');
             if (!Cmd::runCheck("rsync -ap --delete-after --exclude=.git $stagrDir/files/stagr-libs/Stagr/ ". self::STAGR_INSTALL_DIR. "/ 1>/dev/null 2>/dev/nullL")) {
                 throw new \RuntimeException("Failed to sync Stagr after update");
@@ -92,9 +92,13 @@ class SelfUpdateCommand extends _Command
 
             $newArgs = $_SERVER['argv'];
             array_shift($newArgs);
-            Cmd::runDetach($_SERVER['PHP_SELF'], $newArgs, $_ENV);
+            if ($newArgs[0] !== 'self-update') {
+                Cmd::runDetach($_SERVER['PHP_SELF'], $newArgs, $_ENV);
+            } else {
+                $output->writeln('<info>Update performed</info>');
+            }
         } else {
-            echo "Not updated, no replace\n";
+            $output->writeln('<info>Update not required.</info>');
         }
     }
 
