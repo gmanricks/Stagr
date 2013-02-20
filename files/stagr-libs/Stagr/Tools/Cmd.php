@@ -55,19 +55,20 @@ class Cmd
     /**
      * Run command and detaches current process.
      *
-     * @param string.. Args for pcntl_exec()
+     * @param string $path Path to executable
+     * @param array  $args Command line args (optional)
+     * @param array  $env  Env for execution (optional)
      */
-    public static function runDetach()
+    public static function runDetach($path, array $args = array(), array $env = array())
     {
-        $args = func_get_args();
         if (isset($_SERVER['DEBUG']) && $_SERVER['DEBUG'] > 0) {
-            $cmd = join(' ', $args);
+            $cmd = $path. ' '. join(' ', $args);
             echo "DEBUG::run: \"$cmd\"\n";
         }
         if (isset($_SERVER['DRYRUN']) && $_SERVER['DRYRUN'] > 0) {
             exit;
         }
-        call_user_func_array('pcntl_exec', $args);
+        call_user_func_array('pcntl_exec', [$path, $args, $env]);
     }
 
 }

@@ -82,10 +82,9 @@ class SelfUpdateCommand extends _Command
         }
 
         // having updates
-        if ($updated) {
+        if ($updated || (isset($_SERVER['FORCE_UPDATE']) && $_SERVER['FORCE_UPDATE'] > 0)) {
             $output->writeln('<info>Stagr updated -> re-init</info>');
-            $res = Cmd::run("rsync -ap --delete-after --exclude=.git $stagrDir/files/stagr-libs/Stagr/ ". self::STAGR_INSTALL_DIR. "/ 1>/dev/null 2>/dev/null && echo OK || echo FAIL");
-            if ($res != "OK") {
+            if (!Cmd::runCheck("rsync -ap --delete-after --exclude=.git $stagrDir/files/stagr-libs/Stagr/ ". self::STAGR_INSTALL_DIR. "/ 1>/dev/null 2>/dev/nullL")) {
                 throw new \RuntimeException("Failed to sync Stagr after update");
             }
             Cmd::run("cp $stagrDir/files/cilex.phar ". self::STAGR_INSTALL_DIR. "/cilex.phar");
