@@ -32,6 +32,47 @@ class Setup
     const STAGR_HOME_DIR = '/home/vagrant';
 
     /**
+     * @var string Template for App git folder
+     */
+    const APP_GIT_DIR_TMPL = '/home/vagrant/apps/%s.git';
+
+    /**
+     * @var string Template for App docroot
+     */
+    const APP_WWW_DIR_TMPL = '/var/www/web/%s';
+
+    /**
+     * @var string Template for App docroot
+     */
+    const APP_FPM_SOCK_DIR_TMPL = '/var/fpm/socks/%s';
+
+    /**
+     * @var string Template for App docroot
+     */
+    const APP_FPM_PREPEND_DIR_TMPL = '/var/fpm/prepend/%s';
+
+    /**
+     * @var Type
+     */
+    public static $DEFAULT_SETTINGS = array(
+        'env'      => array(),
+        'doc-root' => '',
+        'hooks'    => array(
+            'webcall'  => false,
+        ),
+        'php' => array(
+            'date-timezone'       => 'Europe/Berlin',
+            'max_execution_time'  => 300,
+            'memory_limit'        => '64M',
+            'apc-shm_size'        => '64M',
+            'upload_max_filesize' => '128M',
+            'post_max_size'       => '128M',
+            'short_open_tag'      => 'On',
+            'output_buffering'    => 4096
+        )
+    );
+
+    /**
      * @var \Symfony\Component\Console\Output\OutputInterface
      */
     private $output;
@@ -117,7 +158,7 @@ LOGO;
     {
         //Create Folder
         $this->output->write('Creating Directories ... ');
-        foreach (array('/var/www/web/%s/htdocs', '/var/www/web/%s/redir', '/var/fpm/socks/%s', '/var/fpm/prepend/%s') as $tmpl) {
+        foreach (array(self::APP_WWW_DIR_TMPL. '/htdocs', self::APP_WWW_DIR_TMPL. '/redir', self::APP_FPM_SOCK_DIR_TMPL, self::APP_FPM_PREPEND_DIR_TMPL) as $tmpl) {
             $dir = sprintf($tmpl, $this->appName);
             if (!is_dir($dir)) {
                 mkdir($dir, 0755, true);
@@ -129,8 +170,9 @@ LOGO;
 
         //Create Symlink for PHP-FPM
         $this->output->write('Creating Symlink for PHP-FPM ... ');
-        if (!is_link("/var/www/web/$this->appName/redir/php")) {
-            exec("chdir /var/www/web/$this->appName/redir; ln -s ../htdocs php");
+        $linkRedirDir = sprintf(self::APP_WWW_DIR_TMPL. '/redir', $this->appName);
+        if (!is_link("$linkRedirDir/php")) {
+            exec("chdir $linkRedirDir; ln -s ../htdocs php");
         }
         $this->output->writeln('<info>OK</info>');
 
@@ -152,7 +194,7 @@ LOGO;
 
         //Create PHP/FPM prepend file
         $this->output->write('Creating PHP/FPM Prepend File ... ');
-        file_put_contents("/var/fpm/prepend/$this->appName/prepend.php", $this->generateFpmPrepend());
+        file_put_contents(sprintf(self::APP_FPM_PREPEND_DIR_TMPL. '/prepend.php', $this->appName), $this->generateFpmPrepend());
         $this->output->writeln('<info>OK</info>');
 
         $this->restartServices();
@@ -224,9 +266,9 @@ LOGO;
     {
         //Create folder for Bare Repo
         $this->output->write('Creating Bare Repository ... ');
-        $gitDir = self::STAGR_HOME_DIR. '/'. $this->appName. '.git';
+        $gitDir = sprintf(self::APP_GIT_DIR_TMPL, $this->appName);
         if (!is_dir($gitDir)) {
-            mkdir($gitDir, 0755);
+            mkdir($gitDir, 0755, true);
         }
         chown($gitDir, "vagrant");
         chgrp($gitDir, "vagrant");
@@ -238,7 +280,7 @@ LOGO;
 
         //Create Site's Repo
         $this->output->write('Creating Repo in Sites Directory ... ');
-        $webDir = "/var/www/web/{$this->appName}/htdocs";
+        $webDir = sprintf(self::APP_WWW_DIR_TMPL. '/htdocs', $this->appName);
         if (!is_dir("$webDir/.git")) {
             chdir($webDir);
             exec("sudo -u vagrant git init");
@@ -336,16 +378,18 @@ LOGO;
     protected function generateVhostContent()
     {
         $email = $this->app->configParam('email');
-        $settings = $this->app->configParam($this->appName);
+        $settings = $this->app->configParam('apps.'. $this->appName);
         $docRoot = $settings['doc-root'];
+        $baseDir = sprintf(self::APP_WWW_DIR_TMPL, $this->appName);
+        $socksDir = sprintf(self::APP_FPM_PREPEND_DIR_TMPL, $this->appName);
         $vHost = <<<SITE
 
-FastCgiExternalServer /var/www/web/{$this->appName}/redir/php -socket /var/fpm/socks/{$this->appName}.sock -idle-timeout 305 -flush
+FastCgiExternalServer $baseDir/redir/php -socket $socksDir/sock -idle-timeout 305 -flush
 
 <VirtualHost *:80>
     ServerAdmin $email
     ServerName {$this->appName}.dev
-    DocumentRoot /var/www/web/{$this->appName}/htdocs/$docRoot
+    DocumentRoot $baseDir/htdocs/$docRoot
 
     SetEnv APP_NAME "{$this->appName}"
 
@@ -365,9 +409,9 @@ SITE;
     </FilesMatch>
     AddHandler php5-{$this->appName}-fcgi .php
     Action php5-{$this->appName}-fcgi /.ctrl/~~~php
-    Alias /.ctrl/~~~php /var/www/web/{$this->appName}/redir/php/$docRoot
+    Alias /.ctrl/~~~php $baseDir/redir/php/$docRoot
 
-    <Directory /var/www/web/{$this->appName}/htdocs/$docRoot>
+    <Directory $baseDir/htdocs/$docRoot>
         # PathInfo for PHP-FPM
         RewriteEngine On
         RewriteCond %{REQUEST_URI} \.php/ [NC]
@@ -393,15 +437,22 @@ SITE;
      */
     protected function generateFpmConfig()
     {
-        $settings = $this->app->configParam($this->appName);
 
+        // php settings
+        $settings = $this->app->configParam('apps.'. $this->appName. '.php');
         $phpAppSettings = '';
-        foreach (['date-timezone', 'max_execution_time', 'upload_max_filesize', 'memory_limit', 'apc-shm_size', 'post_max_size', 'short_open_tag', 'output_buffering'] as $valName) {
-            $phpAppSettings .= sprintf('php_value[%s] = "%s"', preg_replace('/\-/', '.', $valName), $settings[$valName]). "\n";
+        foreach ($settings as $confName => $confValue) {
+            $phpAppSettings .= sprintf('php_value[%s] = "%s"', preg_replace('/\-/', '.', $confName), $confValue). "\n";
         }
+
+        // dirs & files
+        $sockFile = sprintf(self::APP_FPM_SOCK_DIR_TMPL. '/sock', $this->appName);
+        $prependFile = sprintf(self::APP_FPM_PREPEND_DIR_TMPL. '/prepend.php', $this->appName);
+        $htdocsDir = sprintf(self::APP_WWW_DIR_TMPL. '/htdocs', $this->appName);
+
         return <<<FPMCONF
 [{$this->appName}]
-listen = /var/fpm/socks/{$this->appName}.sock
+listen = $sockFile
 
 listen.owner = vagrant
 listen.group = www-data
@@ -418,11 +469,11 @@ pm.max_spare_servers = 3
 pm.max_requests = 1000
 request_terminate_timeout = 300
 php_value[open_basedir] = ""
-php_value[include_path] = ".:/usr/share/php:/var/www/web/{$this->appName}/htdocs"
+php_value[include_path] = ".:/usr/share/php:$htdocsDir"
 php_value[upload_tmp_dir] = "/tmp"
 php_value[session.save_path] = "/tmp"
 php_value[apc.shm_size] = "32M"
-php_value[auto_prepend_file] = "/var/fpm/prepend/{$this->appName}/prepend.php"
+php_value[auto_prepend_file] = "$prependFile"
 php_value[default_charset] = "UTF-8"
 $phpAppSettings
 
@@ -490,18 +541,22 @@ PREHOOK;
      */
     protected function generateGitPostHook()
     {
+        $htdocsDir = sprintf(self::APP_WWW_DIR_TMPL. '/htdocs', $this->appName);
+        $deployGitDir = sprintf(self::APP_WWW_DIR_TMPL. '/htdocs/.git', $this->appName);
+        $homeDir = self::STAGR_HOME_DIR;
+
         return <<<POSTHOOK
 #!/usr/bin/php
 <?php
 
-require("/home/vagrant/PHP-GIT-Hooks/PHook.php");
+require("$homeDir/PHP-GIT-Hooks/PHook.php");
 \$ph = new PHook;
 
 \$ph->clear(" -> ")->cyan("OK")->withoutACommand();
 
 \$ph->say("Step2: Deploying")
     ->thenRun(function(){
-        \$git = "git --git-dir=/var/www/web/{$this->appName}/htdocs/.git/ --work-tree=/var/www/web/{$this->appName}/htdocs/";
+        \$git = "git --git-dir=$htdocsDir/.git/ --work-tree=$htdocsDir/";
         exec("\$git fetch -q origin");
         exec("\$git reset --hard origin/master");
     })
@@ -510,7 +565,7 @@ require("/home/vagrant/PHP-GIT-Hooks/PHook.php");
 \$ph->onTrigger("[trigger:composer]")
     ->say("Step3: Composer Hook")->clear("\n -> Triggering install - get a ")->cyan("coffee")
     ->thenRun(function(){
-        chdir("/var/www/web/{$this->appName}/htdocs");
+        chdir("$htdocsDir");
         putenv("GIT_DIR");
         exec("composer update");
     })

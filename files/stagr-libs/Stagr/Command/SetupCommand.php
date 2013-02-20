@@ -14,9 +14,7 @@ namespace Stagr\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Shell;
 use Stagr\Tools\Setup;
 
 /**
@@ -31,7 +29,7 @@ class SetupCommand extends _Command
         $this
             ->setName('setup')
             ->setDescription('Setup or update an App')
-            ->addArgument('name', InputArgument::OPTIONAL, 'Who do you want to greet?');
+            ->addArgument('name', InputArgument::OPTIONAL, 'Name of the App');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -58,23 +56,8 @@ class SetupCommand extends _Command
 
         $app = $this->getApplication()->getContainer();
 
-        //Set Defaults
-        $defaults = array(
-            'env' => array(),
-            'webcall' => false,
-            'date-timezone' => 'Europe/Berlin',
-            'max_execution_time' => 300,
-            'memory_limit' => '64M',
-            'apc-shm_size' => '64M',
-            'upload_max_filesize' => '128M',
-            'post_max_size' => '128M',
-            'short_open_tag' => 'On',
-            'output_buffering' => 4096,
-            'doc-root' => ''
-        );
-
-
-        $app->configParam($appName, $defaults);
+        // write app defaults
+        $app->configParam('apps.'. $appName, Setup::$DEFAULT_SETTINGS);
 
         // setup all
         $output->writeln("\n\nSetup {$appName}\n----------");
