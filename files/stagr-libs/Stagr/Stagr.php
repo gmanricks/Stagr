@@ -68,6 +68,23 @@ class Stagr extends \Cilex\Application
     }
 
     /**
+      * Unset a parameter completely
+      *
+      * @param  string  $name   Config key name to be unset
+      *
+      * @return boolean   True if deleted or false if didn't exist
+      */
+    public function unsetParam($name)
+    {
+        if (isset($this->config[$name])) {
+            unset($this->config[$name]);
+            file_put_contents(Setup::STAGR_HOME_DIR. '/.stagr', yaml_emit($this->config));
+            return true;
+        }
+        return false;
+    }
+
+    /**
       * Reads stagr YAML config
       */
     private function initConfig()
