@@ -52,4 +52,22 @@ class Cmd
         return isset($_SERVER['DRYRUN']) && $_SERVER['DRYRUN'] > 0 ? true : strpos($res, 'FAIL') === false;
     }
 
+    /**
+     * Run command and detaches current process.
+     *
+     * @param string.. Args for pcntl_exec()
+     */
+    public static function runDetach()
+    {
+        $args = func_get_args();
+        if (isset($_SERVER['DEBUG']) && $_SERVER['DEBUG'] > 0) {
+            $cmd = join(' ', $args);
+            echo "DEBUG::run: \"$cmd\"\n";
+        }
+        if (isset($_SERVER['DRYRUN']) && $_SERVER['DRYRUN'] > 0) {
+            exit;
+        }
+        call_user_func_array('pcntl_exec', $args);
+    }
+
 }

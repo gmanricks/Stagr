@@ -79,7 +79,6 @@ class SelfUpdateCommand extends _Command
             if (!Cmd::runCheck("git pull stagr-update $stagrBranch && echo OK || echo FAIL")) {
                 throw new \RuntimeException("Failed pull '$stagrBranch' from '$stagrRepo'");
             }
-            echo 'PULL RESPONSE "'. $pullResponse. '"'. "\n";
         }
 
         // having updates
@@ -94,7 +93,7 @@ class SelfUpdateCommand extends _Command
 
             $newArgs = $_SERVER['argv'];
             array_shift($newArgs);
-            pcntl_exec($_SERVER['PHP_SELF'], $newArgs, $_ENV);
+            Cmd::runDetach($_SERVER['PHP_SELF'], $newArgs, $_ENV);
         } else {
             echo "Not updated, no replace\n";
         }
