@@ -55,7 +55,7 @@ class SetCommand extends _Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        Setup::printLogo();
+        Setup::printLogo('Set');
 
         // check root
         if (posix_geteuid() !== 0) {

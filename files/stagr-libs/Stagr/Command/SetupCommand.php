@@ -14,9 +14,7 @@ namespace Stagr\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Shell;
 use Stagr\Tools\Setup;
 
 /**
@@ -31,7 +29,7 @@ class SetupCommand extends _Command
         $this
             ->setName('setup')
             ->setDescription('Setup or update an App')
-            ->addArgument('name', InputArgument::OPTIONAL, 'Who do you want to greet?');
+            ->addArgument('name', InputArgument::OPTIONAL, 'Name of the App');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
