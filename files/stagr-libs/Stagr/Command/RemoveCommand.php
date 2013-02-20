@@ -96,7 +96,6 @@ class RemoveCommand extends _Command
             "/etc/php5/pool.d/$appName.conf",
         ) as $file) {
             if (file_exists($file)) {
-                print "RM '$file'\n";
                 unlink($file);
             }
         }
