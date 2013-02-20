@@ -34,22 +34,71 @@ class SelfUpdateCommand extends _Command
         $this
             ->setName('self-update')
             ->setDescription('Performs self update for Stagr')
-            ->addOption('dir', null, InputOption::VALUE_OPTIONAL, 'Directory where stagr is installed', self::DEFAULT_STAGR_DIR)
-            ->addOption('repo', null, InputOption::VALUE_OPTIONAL, 'URL to Stagr repository', self::DEFAULT_STAGR_REPO)
-            ->addOption('branch', null, InputOption::VALUE_OPTIONAL, 'Branch of the Stagr repo', self::DEFAULT_STAGR_BRANCH);
+            ->addOption('dir', null, InputOption::VALUE_OPTIONAL, 'Directory where stagr is installed', '')
+            ->addOption('repo', null, InputOption::VALUE_OPTIONAL, 'URL to Stagr repository', '')
+            ->addOption('branch', null, InputOption::VALUE_OPTIONAL, 'Branch of the Stagr repo', '');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $stagrDir    = $input->getOption('dir');
+        $stagrRepo   = $input->getOption('repo');
+        $stagrBranch = $input->getOption('branch');
+        $this->performSelfUpdate($stagrDir, $stagrRepo, $stagrBranch, $output, false);
+    }
+
+    /**
+     * Actually performs the self-update
+     *
+     * @param string $stagrDir     Directory for the Stagr repo
+     * @param string $stagrRepo    URL for the Stagr repo
+     * @param string $stagrBranch  Branch of the Stagr repo
+     *
+     * @throws \RuntimeException
+     */
+    public function performSelfUpdate($stagrDir = '', $stagrRepo = '', $stagrBranch = '', OutputInterface $output = null, $reExecute = true)
+    {
+        $updated  = false;
+        $app      = $this->getApplication()->getContainer();
+        $settings = $app->configParam('self-update') ?: array();
+
+        // init dir
+        if (empty($stagrDir)) {
+            $settings['dir'] = $stagrDir = isset($settings['dir']) && !empty($settings['dir'])
+                ? $settings['dir']
+                : self::DEFAULT_STAGR_DIR;
+        } else {
+            $settings['dir'] = $stagrDir;
+        }
         $stagrDirEsc = escapeshellarg($stagrDir);
-        $stagrRepo   = escapeshellarg($input->getOption('repo'));
-        $stagrBranch = escapeshellarg($input->getOption('branch'));
-        $updated     = false;
+
+        // init repo
+        if (empty($stagrRepo)) {
+            $settings['repo'] = $stagrRepo = isset($settings['repo']) && !empty($settings['repo'])
+                ? $settings['repo']
+                : self::DEFAULT_STAGR_DIR;
+        } else {
+            $settings['repo'] = $stagrRepo;
+        }
+        $stagrRepo = escapeshellarg($stagrRepo);
+
+        // init branch
+        if (empty($stagrBranch)) {
+            $settings['branch'] = $stagrBranch = isset($settings['branch']) && !empty($settings['branch'])
+                ? $settings['branch']
+                : self::DEFAULT_STAGR_DIR;
+        } else {
+            $settings['branch'] = $stagrBranch;
+        }
+        $stagrBranch = escapeshellarg($stagrBranch);
+
+        $app->configParam('self-update', $settings);
 
         // dir not existing -> clone now
         if (!is_dir($stagrDir)) {
-            $output->writeln('<info>Clone Stagr</info>');
+            if ($output) {
+                $output->writeln('<info>Clone Stagr</info>');
+            }
             Cmd::run("mkdir -p $stagrDirEsc");
             chdir($stagrDir);
             Cmd::run("git clone $stagrRepo . && git checkout $stagrBranch 2>&1");
@@ -59,7 +108,9 @@ class SelfUpdateCommand extends _Command
         // just update
         else {
             chdir($stagrDir);
-            $output->writeln('<info>Try update Stagr</info>');
+            if ($output) {
+                $output->writeln('<info>Try update Stagr</info>');
+            }
             $checkRemote = Cmd::run("git remote | grep '^stagr-update\$' | wc -l");
             if (!$checkRemote) {
                 Cmd::run("git remote add stagr-update $stagrRepo");
@@ -83,7 +134,9 @@ class SelfUpdateCommand extends _Command
 
         // having updates
         if ($updated) {
-            $output->writeln('<info>Stagr updated -> re-init</info>');
+            if ($output) {
+                $output->writeln('<info>Stagr updated -> re-init</info>');
+            }
             if (!Cmd::runCheck("rsync -ap --delete-after --exclude=.git $stagrDir/files/stagr-libs/Stagr/ ". self::STAGR_INSTALL_DIR. "/ 1>/dev/null 2>/dev/nullL")) {
                 throw new \RuntimeException("Failed to sync Stagr after update");
             }
@@ -92,12 +145,12 @@ class SelfUpdateCommand extends _Command
 
             $newArgs = $_SERVER['argv'];
             array_shift($newArgs);
-            if ($newArgs[0] !== 'self-update') {
+            if ($reExecute) {
                 Cmd::runDetach($_SERVER['PHP_SELF'], $newArgs, $_ENV);
-            } else {
+            } elseif ($output) {
                 $output->writeln('<info>Update performed</info>');
             }
-        } else {
+        } elseif ($output) {
             $output->writeln('<info>Update not required.</info>');
         }
     }
