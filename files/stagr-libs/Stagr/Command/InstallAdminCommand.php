@@ -40,7 +40,7 @@ class InstallAdminCommand extends _Command
         if (posix_geteuid() !== 0) {
             throw new \LogicException("Use 'sudo stagr'!");
         }
-        $appName = "_fortrabbit";
+        $appName = "000_fortrabbit";
         $setup = new Setup($appName, $output, $this);
 
         $app = $this->getApplication()->getContainer();
