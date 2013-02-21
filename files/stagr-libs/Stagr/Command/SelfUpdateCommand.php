@@ -129,6 +129,8 @@ class SelfUpdateCommand extends _Command
             }
             if (!Cmd::runCheck("git pull stagr-update $stagrBranch && echo OK || echo FAIL")) {
                 throw new \RuntimeException("Failed pull '$stagrBranch' from '$stagrRepo'");
+            } else {
+                $updated = true;
             }
         }
 
