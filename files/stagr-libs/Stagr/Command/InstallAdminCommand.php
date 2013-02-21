@@ -47,7 +47,7 @@ class InstallAdminCommand extends _Command
 
         $app = $this->getApplication()->getContainer();
 
-        if ($input->getOption("just-update")) {
+        if (!$input->getOption("just-update")) {
             $app->configParam('apps.'. $appName, Setup::$DEFAULT_SETTINGS);
             $setup->setupWebserver();
             $setup->setupMySQL();
