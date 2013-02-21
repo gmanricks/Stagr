@@ -377,19 +377,18 @@ LOGO;
      */
     protected function generateVhostContent()
     {
-        $email = ($this->app->configParam('email')) ? "ServerAdmin " . $this->app->configParam('email') : "";
+        $email = $this->app->configParam('email');
         $settings = $this->app->configParam('apps.'. $this->appName);
         $docRoot = $settings['doc-root'];
         $baseDir = sprintf(self::APP_WWW_DIR_TMPL, $this->appName);
         $socksDir = sprintf(self::APP_FPM_SOCK_DIR_TMPL, $this->appName);
-        $sname = ($this->appName != "_fortrabbit") ? "ServerName {$this->appName}.dev" : "";
         $vHost = <<<SITE
 
 FastCgiExternalServer $baseDir/redir/php -socket $socksDir/sock -idle-timeout 305 -flush
 
 <VirtualHost *:80>
-    $email
-    $sname
+    ServerAdmin $email
+    ServerName {$this->appName}.dev
     DocumentRoot $baseDir/htdocs/$docRoot
 
     SetEnv APP_NAME "{$this->appName}"

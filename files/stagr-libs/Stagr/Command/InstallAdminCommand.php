@@ -17,6 +17,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Stagr\Tools\Setup;
+use Stagr\Tools\Cmd;
 
 /**
  * Example command for testing purposes.
@@ -29,7 +30,8 @@ class InstallAdminCommand extends _Command
     {
         $this
             ->setName('install-admin')
-            ->setDescription('Sets up the Stagr Admin');
+            ->setDescription('Sets up the Stagr Admin')
+            ->addOption('just-update', null, InputOption::VALUE_NONE, 'Set to Skip Installation');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -45,9 +47,16 @@ class InstallAdminCommand extends _Command
 
         $app = $this->getApplication()->getContainer();
 
-        $app->configParam('apps.'. $appName, Setup::$DEFAULT_SETTINGS);
-        $setup->setupWebserver();
-        $setup->setupMySQL();
-        $setup->setupGit();
+        if ($input->getOption("just-update")) {
+            $app->configParam('apps.'. $appName, Setup::$DEFAULT_SETTINGS);
+            $setup->setupWebserver();
+            $setup->setupMySQL();
+        }
+
+        $docRoot = sprintf($setup::APP_WWW_DIR_TMPL . '/htdocs', $appName);
+
+        Cmd::run('rm -R ' . $docRoot);
+        Cmd::run('cp -R /vagrant/files/default-site/ ' . $docRoot);
+        Cmd::run('chown -R vagrant ' . $docRoot);
     }
 }
