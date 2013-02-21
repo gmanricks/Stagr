@@ -377,7 +377,7 @@ LOGO;
      */
     protected function generateVhostContent()
     {
-        $email = $this->app->configParam('email');
+        $email = ($this->app->configParam('email')) ? "ServerAdmin " . $this->app->configParam('email') : "";
         $settings = $this->app->configParam('apps.'. $this->appName);
         $docRoot = $settings['doc-root'];
         $baseDir = sprintf(self::APP_WWW_DIR_TMPL, $this->appName);
@@ -387,7 +387,7 @@ LOGO;
 FastCgiExternalServer $baseDir/redir/php -socket $socksDir/sock -idle-timeout 305 -flush
 
 <VirtualHost *:80>
-    ServerAdmin $email
+    $email
     ServerName {$this->appName}.dev
     DocumentRoot $baseDir/htdocs/$docRoot
 
