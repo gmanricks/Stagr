@@ -103,10 +103,7 @@ class SelfUpdateCommand extends _Command
             chdir($stagrDir);
             Cmd::run("git clone $stagrRepo . && git checkout $stagrBranch 2>&1");
             $updated = true;
-        }
-
-        // just update
-        else {
+        } else { // just update
             chdir($stagrDir);
             if ($output) {
                 $output->writeln('<info>Try update Stagr</info>');
@@ -156,6 +153,4 @@ class SelfUpdateCommand extends _Command
             $output->writeln('<info>Update not required.</info>');
         }
     }
-
-
 }
