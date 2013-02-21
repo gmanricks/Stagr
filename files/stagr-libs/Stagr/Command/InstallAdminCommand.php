@@ -21,7 +21,7 @@ use Stagr\Tools\Setup;
 /**
  * Example command for testing purposes.
  */
-class InstallAdmin extends _Command
+class InstallAdminCommand extends _Command
 {
 
 
