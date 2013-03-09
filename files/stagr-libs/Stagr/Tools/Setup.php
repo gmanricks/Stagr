@@ -381,7 +381,7 @@ LOGO;
         $settings = $this->app->configParam('apps.'. $this->appName);
         $docRoot = $settings['doc-root'];
         $baseDir = sprintf(self::APP_WWW_DIR_TMPL, $this->appName);
-        $socksDir = sprintf(self::APP_FPM_PREPEND_DIR_TMPL, $this->appName);
+        $socksDir = sprintf(self::APP_FPM_SOCK_DIR_TMPL, $this->appName);
         $vHost = <<<SITE
 
 FastCgiExternalServer $baseDir/redir/php -socket $socksDir/sock -idle-timeout 305 -flush

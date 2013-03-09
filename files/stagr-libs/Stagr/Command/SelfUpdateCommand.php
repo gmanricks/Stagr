@@ -76,7 +76,7 @@ class SelfUpdateCommand extends _Command
         if (empty($stagrRepo)) {
             $settings['repo'] = $stagrRepo = isset($settings['repo']) && !empty($settings['repo'])
                 ? $settings['repo']
-                : self::DEFAULT_STAGR_DIR;
+                : self::DEFAULT_STAGR_REPO;
         } else {
             $settings['repo'] = $stagrRepo;
         }
@@ -86,7 +86,7 @@ class SelfUpdateCommand extends _Command
         if (empty($stagrBranch)) {
             $settings['branch'] = $stagrBranch = isset($settings['branch']) && !empty($settings['branch'])
                 ? $settings['branch']
-                : self::DEFAULT_STAGR_DIR;
+                : self::DEFAULT_STAGR_BRANCH;
         } else {
             $settings['branch'] = $stagrBranch;
         }
@@ -103,10 +103,7 @@ class SelfUpdateCommand extends _Command
             chdir($stagrDir);
             Cmd::run("git clone $stagrRepo . && git checkout $stagrBranch 2>&1");
             $updated = true;
-        }
-
-        // just update
-        else {
+        } else { // just update
             chdir($stagrDir);
             if ($output) {
                 $output->writeln('<info>Try update Stagr</info>');
@@ -129,6 +126,8 @@ class SelfUpdateCommand extends _Command
             }
             if (!Cmd::runCheck("git pull stagr-update $stagrBranch && echo OK || echo FAIL")) {
                 throw new \RuntimeException("Failed pull '$stagrBranch' from '$stagrRepo'");
+            } else {
+                $updated = true;
             }
         }
 
@@ -154,6 +153,4 @@ class SelfUpdateCommand extends _Command
             $output->writeln('<info>Update not required.</info>');
         }
     }
-
-
 }

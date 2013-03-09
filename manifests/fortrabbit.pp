@@ -85,7 +85,8 @@ class fortrabbit {
 		group   => 'vagrant',
 		mode    => '0755',
 		ensure  => present,
-		require => Exec['composer']; 
+		require => Exec['composer'],
+		notify	=> Exec["setup-admin"]; 
 	}
 	file { '/etc/motd':
 		content => template("motd.erb");
@@ -166,22 +167,11 @@ class fortrabbit {
 	/*
 		Default VHost
 	*/
-	file {
-		'/etc/apache2/sites-available/default':
-			owner   => 'root',
-			group   => 'root',
-			mode    => '0644',
-			source  => '/vagrant/files/default-vhost.conf',
-			require => Package['apache2-mpm-worker'];
-
-		'/var/www/default':
-			ensure  => 'directory',
-			owner   => 'root',
-			group   => 'root',
-			mode    => '0755',
-			source  => '/vagrant/files/default-site',
-			recurse => true,
-			require => Package['apache2-mpm-worker'];
+	exec { 'setup-admin':
+		path 		=> '/bin:/usr/bin',
+		command 	=> 'stagr install-admin',
+		require 	=>	File['/opt/stagr/lib', '/usr/bin/stagr'],
+		refreshonly => true;
 	}
 }
 
