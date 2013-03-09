@@ -25,6 +25,12 @@ use Stagr\Tools\Setup;
 class SetCommand extends _Command
 {
 
+    private $updateFpm;
+    private $updateApache;
+    private $updateGit;
+    private $appName;
+    private $input;
+    private $app;
 
     protected function configure()
     {
@@ -37,20 +43,19 @@ class SetCommand extends _Command
             ->addOption('timezone', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s Timezone')
             ->addOption('exec-time', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max execution time')
             ->addOption('memory-limit', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s memory Limit')
+            ->addOption('apc-size', null, InputOption::VALUE_REQUIRED, 'This property sets APC\'s Cache size')
             ->addOption('upload-size', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max upload size')
             ->addOption('post-size', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max post size')
             ->addOption('output-buffering', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s output buffering size')
+            ->addOption('doc-root', null, InputOption::VALUE_REQUIRED, 'This property sets the document root')
             ->addOption('enable-short-tags', null, InputOption::VALUE_NONE, 'Property to enable PHP\'s short open tag')
-            ->addOption('enable-phalcon', null, InputOption::VALUE_NONE, 'Property to enable the Phalcon framework')
-            ->addOption('enable-yaf', null, InputOption::VALUE_NONE, 'Property to enable the Yaf framework')
             ->addOption('disable-short-tags', null, InputOption::VALUE_NONE, 'Property to disable PHP\'s short open tag')
-            ->addOption('disable-phalcon', null, InputOption::VALUE_NONE, 'Property to disable the Phalcon framework')
-            ->addOption('disable-yaf', null, InputOption::VALUE_NONE, 'Property to disable the Yaf framework');
+            ->addOption('restore-defaults', null, InputOption::VALUE_NONE, 'Use this option to restore all defaults');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        Setup::printLogo();
+        Setup::printLogo('Set');
 
         // check root
         if (posix_geteuid() !== 0) {
@@ -58,56 +63,79 @@ class SetCommand extends _Command
         }
 
         // initialize some variables
-        $app = $this->getArgument('app');
-        $settings = (is_array($this->configParam($app))) ? $this->configParam($app) : array();
-        
-        // proccess CLI options
-        $this->setEnviromentVars(&$settings);
-        $this->setWebcall(&$settings);
-        $this->setTimezone(&$settings);
-        $this->setExecTime(&$settings);
-        $this->setMemoryLimit(&$settings);
-        $this->setUploadSize(&$settings);
-        $this->setPostSize(&$settings);
-        $this->setOutputBuffering(&$settings);
-        $this->enableShortTags(&$settings);
-        $this->enablePhalcon(&$settings);
-        $this->enableYaf(&$settings);
-        $this->disableShortTags(&$settings);
-        $this->disablePhalcon(&$settings);
-        $this->disableYaf(&$settings);
+        $this->appName = $appName = $input->getArgument('app');
+        $this->app = $app = $this->getApplication()->getContainer();
 
-        // save settings
-        $this->configParam($app, $settings);
+        // set only for existing app
+        if (!$app->configParam('apps.'. $appName)) {
+            throw new \RuntimeException("App '$appName' does not exist. Create first with 'stagr setup \"$appName\"'");
+        }
+
+        $this->input = &$input;
+
+        //Initialize rebuild booleans
+        $this->updateFpm = false;
+        $this->updateApache = false;
+        $this->updateGit = false;
+
+
+        // proccess CLI options
+        $this->setEnviromentVars();
+        $this->setWebcall();
+        $this->setTimezone();
+        $this->setExecTime();
+        $this->setMemoryLimit();
+        $this->setUploadSize();
+        $this->setPostSize();
+        $this->setOutputBuffering();
+        $this->enableShortTags();
+        $this->disableShortTags();
+        $this->setDocRoot();
+        $this->setApcSize();
+        $this->restoreDefaults();
+
+        $setup = new Setup($appName, $output, $this);
+
+        if ($this->updateFpm) {
+            $setup->rebuildFpmConfig();
+        }
+
+        if ($this->updateApache) {
+            $setup->rebuildVhost();
+        }
+
+        if ($this->updateApache || $this->updateFpm) {
+            $setup->restartServices();
+        }
     }
 
     /**
-     * Function for checking and setting PHP's env vars 
-     *
-     * @param  array $settings - app's Settings arr
+     * Function for checking and setting PHP's env vars
      */
-    protected function setEnviromentVars(&$settings)
+    protected function setEnviromentVars()
     {
-        if ($env = $input->getOption('env')) {
-            //TODO: Do some input validation
-
-            $settings['env'] = $env;
-
-            //TODO: Set the PHP env vars foreach
+        if ($env = $this->input->getOption('env')) {
+            $vars = array();
+            foreach ($env as $str) {
+                $raw = explode("=", $str);
+                if (count($raw) === 2) {
+                    array_push($vars, array($raw[0] => $raw[1]));
+                }
+            }
+            $this->app->configParam("apps.{$this->appName}.env", $vars);
+            $this->updateApache = true;
         }
     }
 
     /**
      * Function for checking and setting Webcall trigger
-     *
-     * @param  array $settings - app's Settings arr
      */
-    protected function setWebcall(&$settings)
+    protected function setWebcall()
     {
-        if ($webcall = $input->getOption('webcall')) {
+        if (!is_null($webcall = $this->input->getOption('webcall'))) {
             //TODO: Test if valid URL Maybe?
 
-            $settings['webcall'] = $webcall;
+            $this->app->configParam("apps.{$this->appName}.hooks.webcall", $webcall ? 1 : 0);
 
             //TODO: Update GIT post-recieve hook, or make hook read from Yaml file
         }
@@ -118,14 +146,17 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setTimezone(&$settings)
+    protected function setTimezone()
     {
-        if ($timezone = $input->getOption('timezone')) {
-            //TODO: Make sure timezone is valid for PHP
+        if ($timezone = $this->input->getOption('timezone')) {
 
-            $settings['timezone'] = $timezone;
+            //Validate timezone
+            $timezoneValidate = timezone_open($timezone);
 
-            //TODO: Update PHP's Timezone
+            if ($timezoneValidate) {
+                $this->app->configParam("apps.{$this->appName}.php.date-timezone", $timezone);
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -134,14 +165,15 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setExecTime(&$settings)
+    protected function setExecTime()
     {
-        if ($execTime = $input->getOption('exec-time')) {
-            //TODO: Make sure it's valid PHP exec-time
+        if ($execTime = $this->input->getOption('exec-time')) {
 
-            $settings['exec-time'] = $execTime;
-
-            //TODO: Update PHP's max exec time
+            //Validates that it's a number
+            if (is_numeric($execTime)) {
+                $this->app->configParam("apps.{$this->appName}.php.max_execution_time", max(intval($execTime), 0));
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -150,14 +182,32 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setMemoryLimit(&$settings)
+    protected function setMemoryLimit()
     {
-        if ($memoryLimit = $input->getOption('memory-limit')) {
-            //TODO: Make sure it's valid PHP memory limit
+        if ($memoryLimit = $this->input->getOption('memory-limit')) {
 
-            $settings['memory-limit'] = $memoryLimit;
+            //Validate that it is a valid memory size parameter
+            if (preg_match('/^[0-9]+[KMG]?$/', $memoryLimit)) {
+                $this->app->configParam("apps.{$this->appName}.php.memory_limit", $memoryLimit);
+                $this->updateFpm = true;
+            }
+        }
+    }
 
-            //TODO: Update PHP's max memory limit
+    /**
+     * Function for checking and setting APC Cache size
+     *
+     * @param  array $settings - app's Settings arr
+     */
+    protected function setApcSize()
+    {
+        if ($apcSize = $this->input->getOption('apc-size')) {
+
+            //Validate that it is a valid memory size parameter
+            if (preg_match('/^[0-9]+[KMG]?$/', $apcSize)) {
+                $this->app->configParam("apps.{$this->appName}.php.apc-shm_size", $apcSize);
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -166,14 +216,15 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setUploadSize(&$settings)
+    protected function setUploadSize()
     {
-        if ($uploadSize = $input->getOption('upload-size')) {
-            //TODO: Make sure it's valid PHP upload size
+        if ($uploadSize = $this->input->getOption('upload-size')) {
 
-            $settings['upload-size'] = $uploadSize;
-
-            //TODO: Update PHP's max upload size
+            //Validate that it is a valid upload size parameter
+            if (preg_match('/^[0-9]+[KMG]?$/', $uploadSize)) {
+                $this->app->configParam("apps.{$this->appName}.php.upload_max_filesize", $uploadSize);
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -182,14 +233,15 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setPostSize(&$settings)
+    protected function setPostSize()
     {
-        if ($postSize = $input->getOption('post-size')) {
-            //TODO: Make sure it's valid PHP POST size
+        if ($postSize = $this->input->getOption('post-size')) {
 
-            $settings['post-size'] = $postSize;
-
-            //TODO: Update PHP's max POST size
+            //Validate that it is a valid post size parameter
+            if (preg_match('/^[0-9]+[KMG]?$/', $postSize)) {
+                $this->app->configParam("apps.{$this->appName}.php.post_max_size", $postSize);
+                $this->updateFpm = true;
+            }
         }
     }
 
@@ -198,14 +250,31 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function setOutputBuffering(&$settings)
+    protected function setOutputBuffering()
     {
-        if ($outputBuffering = $input->getOption('output-buffering')) {
-            //TODO: Make sure it's valid PHP output buffering size
+        if ($outputBuffering = $this->input->getOption('output-buffering')) {
+            if (is_numeric($outputBuffering)) {
+                $this->app->configParam("apps.{$this->appName}.php.output_buffering", intval($outputBuffering));
+                $this->updateFpm = true;
+            } elseif ($outputBuffering === "On" || $outputBuffering === "Off") {
+                $this->app->configParam("apps.{$this->appName}.php.output_buffering", $outputBuffering);
+                $this->updateFpm = true;
+            }
+        }
+    }
 
-            $settings['output-buffering'] = $outputBuffering;
-
-            //TODO: Update PHP's POST output buffering size
+    /**
+     * Function for setting doc root
+     *
+     * @param  array $settings - app's Settings arr
+     */
+    protected function setDocRoot()
+    {
+        if ($docRoot = $this->input->getOption('doc-root')) {
+            if (preg_match('/^[0-9a-zA-Z_\-\/]+$/', $docRoot)) {
+                $this->app->configParam("apps.{$this->appName}.doc-root", $docRoot);
+                $this->updateApache = true;
+            }
         }
     }
 
@@ -214,40 +283,11 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function enableShortTags(&$settings)
+    protected function enableShortTags()
     {
-        if ($input->getOption('enable-short-tags')) {
-            $settings['enable-short-tags'] = true;
-
-            //TODO: Enable PHP Short Tags
-        }
-    }
-
-    /**
-     * Function for checking and enabling Phalcon
-     *
-     * @param  array $settings - app's Settings arr
-     */
-    protected function enablePhalcon(&$settings)
-    {
-        if ($input->getOption('enable-phalcon')) {
-            $settings['enable-phalcon'] = true;
-
-            //TODO: Enable Phalcon
-        }
-    }
-    
-    /**
-     * Function for checking and enabling Yaf
-     *
-     * @param  array $settings - app's Settings arr
-     */
-    protected function enableYaf(&$settings)
-    {
-        if ($input->getOption('enable-yaf')) {
-            $settings['enable-yaf'] = true;
-
-            //TODO: Enable Yaf
+        if ($this->input->getOption('enable-short-tags')) {
+            $this->app->configParam("apps.{$this->appName}.php.short_open_tag", "On");
+            $this->updateFpm = true;
         }
     }
 
@@ -256,40 +296,25 @@ class SetCommand extends _Command
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function disableShortTags(&$settings)
+    protected function disableShortTags()
     {
-        if ($input->getOption('disable-short-tags')) {
-            $settings['disable-short-tags'] = true;
-
-            //TODO: Disable PHP Short Tags
+        if ($this->input->getOption('disable-short-tags')) {
+            $this->app->configParam("apps.{$this->appName}.php.short_open_tag", "Off");
+            $this->updateFpm = true;
         }
     }
 
     /**
-     * Function for checking and disabling Phalcon
+     * Function for checking and disabling PHP's short tags
      *
      * @param  array $settings - app's Settings arr
      */
-    protected function disablePhalcon(&$settings)
+    protected function restoreDefaults()
     {
-        if ($input->getOption('disable-phalcon')) {
-            $settings['disable-phalcon'] = true;
-
-            //TODO: Disable Phalcon
-        }
-    }
-    
-    /**
-     * Function for checking and disabling Yaf
-     *
-     * @param  array $settings - app's Settings arr
-     */
-    protected function disableYaf(&$settings)
-    {
-        if ($input->getOption('disable-yaf')) {
-            $settings['disable-yaf'] = true;
-
-            //TODO: Disable Yaf
+        if ($this->input->getOption('restore-defaults')) {
+            $this->app->configParam("apps.{$this->appName}", Setup::$DEFAULT_SETTINGS, true);
+            $this->updateFpm = true;
+            $this->updateApache = true;
         }
     }
 }

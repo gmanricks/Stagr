@@ -37,6 +37,8 @@ class fortrabbit {
 		require 	=>	Exec['dotdeb-key', 'frbit-key'],
 		refreshonly => true;
 	}
+
+	$phpExtensions = [ "php5-xdebug", "php5-tidy", "php5-sqlite", "php5-redis", "php5-pgsql", "php5-mysqlnd", "php5-memcache", "php5-memcached", "php5-mcrypt", "php5-imagick", "php5-http", "php5-gmp", "php5-gd", "php5-curl", "php5-apc", "php5-intl", "php5-igbinary", "php5-mongo", "php5-oauth", "php5-phalcon", "php5-runkit", "php5-stats", "php5-stomp", "php5-yaf", "php5-yaml" ]
 	package {
 		'apache2-mpm-worker':
 			ensure => installed,
@@ -51,7 +53,7 @@ class fortrabbit {
 			ensure => installed,
 			require => Package['php5-fpm'];
 
-		[ "php5-xdebug", "php5-tidy", "php5-sqlite", "php5-redis", "php5-pgsql", "php5-mysqlnd", "php5-memcache", "php5-memcached", "php5-mcrypt", "php5-imagick", "php5-http", "php5-gmp", "php5-gd", "php5-curl", "php5-apc", "php5-intl", "php5-igbinary", "php5-mongo", "php5-oauth", "php5-phalcon", "php5-runkit", "php5-stats", "php5-stomp", "php5-yaf", "php5-yaml" ]: 
+		$phpExtensions: 
 			ensure	=> installed, 
 			require => Package['php5-fpm'];
 	}
@@ -159,7 +161,27 @@ class fortrabbit {
 		'mysql-server-5.5':
 			ensure	=> installed,
 			require	=> Exec['update-apt'];
+	}
 
+	/*
+		Default VHost
+	*/
+	file {
+		'/etc/apache2/sites-available/default':
+			owner   => 'root',
+			group   => 'root',
+			mode    => '0644',
+			source  => '/vagrant/files/default-vhost.conf',
+			require => Package['apache2-mpm-worker'];
+
+		'/var/www/default':
+			ensure  => 'directory',
+			owner   => 'root',
+			group   => 'root',
+			mode    => '0755',
+			source  => '/vagrant/files/default-site',
+			recurse => true,
+			require => Package['apache2-mpm-worker'];
 	}
 }
 

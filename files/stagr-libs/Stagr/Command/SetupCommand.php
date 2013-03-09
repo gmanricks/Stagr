@@ -13,10 +13,9 @@
 namespace Stagr\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Shell;
 use Stagr\Tools\Setup;
 
 /**
@@ -31,7 +30,8 @@ class SetupCommand extends _Command
         $this
             ->setName('setup')
             ->setDescription('Setup or update an App')
-            ->addArgument('name', InputArgument::OPTIONAL, 'Who do you want to greet?');
+            ->addArgument('name', InputArgument::OPTIONAL, 'Name of the App')
+            ->addOption('restore-defaults', null, InputOption::VALUE_NONE, 'Restores App settings to default (for update only)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -56,8 +56,19 @@ class SetupCommand extends _Command
         $setup = new Setup($appName, $output, $this);
         $setup->initEmailAndSsh();
 
+        $app = $this->getApplication()->getContainer();
+
         // setup all
         $output->writeln("\n\nSetup {$appName}\n----------");
+
+        // write app defaults (if not setup already)
+        if (!($hasSettings = $app->configParam('apps.'. $appName)) || $input->getOption('restore-defaults')) {
+            $output->write(($hasSettings ? 'Restore' : 'Write'). ' default settings: ');
+            $app->configParam('apps.'. $appName, Setup::$DEFAULT_SETTINGS);
+            $output->writeln('<info>OK</info>');
+        } else {
+            $output->writeln('Keep App settings intact');
+        }
 
         $output->writeln("\n# Webserver");
         $setup->setupWebserver();
@@ -77,6 +88,4 @@ class SetupCommand extends _Command
         $setup->printMySQLInfo();
         $output->writeln("\n");
     }
-
-
 }
