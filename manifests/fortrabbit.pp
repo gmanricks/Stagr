@@ -104,6 +104,7 @@ class fortrabbit {
 			ensure	=> directory,
 			source	=> '/vagrant/files/stagr-libs',
 			recurse	=> true,
+			purge	=> true,
 			require	=> File['/opt/stagr'];
 		
 		'/opt/stagr/lib/cilex.phar':

@@ -93,7 +93,7 @@ class RemoveCommand extends _Command
         foreach (array(
             "/etc/apache2/sites-enabled/$appName",
             "/etc/apache2/sites-available/$appName",
-            "/etc/php5/pool.d/$appName.conf",
+            "/etc/php5/fpm/pool.d/$appName.conf",
         ) as $file) {
             if (file_exists($file)) {
                 unlink($file);
