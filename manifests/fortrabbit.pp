@@ -52,7 +52,7 @@ class fortrabbit {
 			owner	=> vagrant,
 			group	=> vagrant,
 			mode	=> '0644',
-			source	=> '/vagrant/files/solarized.vim';
+			source	=> '/vagrant/files/solarized.vim',
 			require	=> File['/home/vagrant/.vim/colors'];
 		
 		
@@ -64,12 +64,12 @@ class fortrabbit {
 		
 		'/etc/apt/sources.list.d/dotdeb.list':
 			mode	=> '0600',
-			content	=> "deb http://packages.dotdeb.org squeeze all\ndeb-src http://packages.dotdeb.org squeeze all\ndeb http://packages.dotdeb.org squeeze-php54 all\ndeb-src http://packages.dotdeb.org squeeze-php54 all"
+			content	=> "deb http://packages.dotdeb.org squeeze all\ndeb-src http://packages.dotdeb.org squeeze all\ndeb http://packages.dotdeb.org squeeze-php54 all\ndeb-src http://packages.dotdeb.org squeeze-php54 all",
 			require	=> File['/etc/apt/sources.list.d'];
 		
 		'/etc/apt/sources.list.d/frbit.list':
 			mode	=> '0600',
-			content	=> "deb http://debrepo.frbit.com/ frbit-squeeze main"
+			content	=> "deb http://debrepo.frbit.com/ frbit-squeeze main",
 			require	=> File['/etc/apt/sources.list.d'];
 		
 		
@@ -79,7 +79,7 @@ class fortrabbit {
 		'/etc/php5/fpm/pool.d/www.conf':
 			ensure	=> absent,
 			require	=> Package['php5-fpm'],
-			notify	=> 'restart-fpm';
+			notify	=> Exec['restart-fpm'];
 		
 		
 		/*
@@ -166,7 +166,7 @@ class fortrabbit {
 		 * Composer install
 		 */
 		'install-composer':
-			cwd		=> '/tmp'
+			cwd		=> '/tmp',
 			command	=> 'curl -s https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer && chmod 0755 /usr/local/bin/composer',
 			require	=> Package[ 'php5-cli' ],
 			unless	=> 'test -f /usr/local/bin/composer';
@@ -190,7 +190,7 @@ class fortrabbit {
 			command		=> 'stagr install-admin',
 			require		=> [
 				File['/opt/stagr/lib', '/usr/bin/stagr'],
-				Package['php-cli']
+				Package['php5-cli']
 			],
 			refreshonly	=> true;
 	}
