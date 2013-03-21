@@ -37,7 +37,6 @@ class Stagr extends \Cilex\Application
     {
         parent::__construct('Stagr', self::VERSION);
         $this->initConfig();
-        $this->command(new \Cilex\Command\GreetCommand());
         foreach (glob(__DIR__. '/Command/*Command.php') as $file) {
             $cmdClass = preg_replace('/^.+\/(.+Command)\.php$/', '$1', $file);
             if (strpos($cmdClass, '_') === 0) {
