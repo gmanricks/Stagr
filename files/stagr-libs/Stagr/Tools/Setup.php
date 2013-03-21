@@ -354,7 +354,7 @@ LOGO;
     public function printGitInfo()
     {
         $this->output->writeln("And add this server to your <info>GIT</info> repository:\n");
-        $this->output->writeln("     git remote add staging vagrant@{$this->appName}.dev:{$this->appName}.git");
+        $this->output->writeln("     git remote add staging vagrant@{$this->appName}.dev:apps\{$this->appName}.git");
     }
 
 
