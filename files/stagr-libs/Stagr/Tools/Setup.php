@@ -529,7 +529,7 @@ FPMPREPEND;
         return <<<PREHOOK
 #!/usr/bin/php
 <?php
-echo "\\e[33mStep1: Updating repository\\[0m\\n";
+echo "\\e[33mStep1: Updating repository\\e[0m\\n";
 ?>
 PREHOOK;
     }
@@ -549,8 +549,8 @@ PREHOOK;
 #!/usr/bin/php
 <?php
 
-require("$homeDir/PHP-GIT-Hooks/PHook.php");
-\$ph = new PHook;
+require("$homeDir/PHP-GIT-Hooks/Codestaq/PHook.php");
+\$ph = new \\Codestaq\\PHook;
 
 \$ph->clear(" -> ")->cyan("OK")->withoutACommand();
 
