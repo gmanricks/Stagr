@@ -6,3 +6,5 @@ ORANGE="\[\033[0;91m\]"
 PS1="$BLUE\u$CLEAR in $YELLOW[$ORANGE\w$YELLOW]$RED » $CLEAR"
 
 export CLICOLOR=1
+
+alias stagr="sudo stagr"
