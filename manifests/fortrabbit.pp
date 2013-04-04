@@ -185,7 +185,7 @@ class fortrabbit {
 		
 		/*
 		 * Run stagr setup-admin
-		 */
+		 *//*
 		'setup-admin':
 			path		=> '/bin:/usr/bin',
 			command		=> 'stagr install-admin',
@@ -193,7 +193,7 @@ class fortrabbit {
 				File['/opt/stagr/lib', '/usr/bin/stagr'],
 				Package['php5-cli']
 			],
-			refreshonly	=> true;
+			refreshonly	=> true;*/
 	}
 	
 	
