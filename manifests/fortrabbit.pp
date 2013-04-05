@@ -87,7 +87,7 @@ class fortrabbit {
 
 		'/etc/apache2/sites-enabled/000-default':
 			'ensure	=> absent',
-			require	=> Package['apache2-mpm-worker'],
+			require	=> Package['apache2-mpm-worker'];
 
 
 		'/etc/php5/fpm/pool.d/stagr.conf':

@@ -52,7 +52,8 @@ Class StagrCon
 			"email" => $email,
 			"sshkeys" => array(
 				$key
-			)
+			),
+			"apps" => array()
 		);
 		file_put_contents($this->stagrFilePath, yaml_emit($data));
 	}
