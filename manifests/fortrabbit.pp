@@ -95,7 +95,7 @@ class fortrabbit {
 			group   => 'root',
 			mode    => '0644',
 			source  => '/vagrant/files/default-fpm.conf',
-		require	=> Package['php5-fpm'];
+			require	=> Package['php5-fpm'];
 		
 		'/var/fpm':
 			ensure	=> directory,

@@ -2,7 +2,7 @@
 					<tbody>
 						<tr>
 							<td class="left"><h1>Apps</h1></td>
-							<td class="right"><a href="#" class="button green">New App</a></td>
+							<td class="right"><a href="/apps/new" class="button green">New App</a></td>
 						</tr>
 					</tbody>
 				</table>			

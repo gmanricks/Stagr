@@ -41,8 +41,40 @@ $app->post('/setup/save', function () use ($app) {
 	if ($_POST['email'] && $_POST['pubkey']) {
 		$s = new \Stagr\StagrCon;
 		$s->createStagrFile($_POST['email'], $_POST['pubkey']);
+		$app->redirect("/");
 	} else {
 		$app->redirect("/setup");
+	}
+});
+
+$app->get('/apps/new', function () use ($app) {
+	$s = new \Stagr\StagrCon;
+	if($s->stagrFileExists()) {
+		$app->render("header.php");
+		$app->render("newApp.php");
+		$app->render("footer.php");
+	} else {
+		$app->redirect('/setup');
+	}
+});
+
+$app->post('/apps/new', function () use ($app) {
+	$s = new \Stagr\StagrCon;
+	if($s->stagrFileExists()) {
+		$name = $_POST['appname'];
+		if ($name) {
+			$data = array(
+				"app" => $name,
+				"log" => $s->createNewApp($name)
+			);
+			$app->render("header.php");
+			$app->render("appCreated.php", $data);
+			$app->render("footer.php");	
+		} else {
+			$app->redirect("/apps/new");
+		}
+	} else {
+		$app->redirect('/setup');
 	}
 });
 
