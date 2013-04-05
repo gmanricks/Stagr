@@ -86,7 +86,7 @@ class fortrabbit {
 			require => File['/etc/apache2/sites-available/0000-default'];
 
 		'/etc/apache2/sites-enabled/000-default':
-			'ensure	=> absent',
+			ensure	=> 'absent',
 			require	=> Package['apache2-mpm-worker'];
 
 
