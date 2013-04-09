@@ -1,0 +1,13 @@
+{
+	"name": "stagrAdmin",
+	"require": {
+		"slim/slim" : "*",
+		"slim/extras" : "*",
+		"twig/twig" : "*"
+	},
+	"autoload": {
+		"psr-0" : {
+			"Stagr": "./vendor"
+		}
+	}
+}

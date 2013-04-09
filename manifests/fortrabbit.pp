@@ -55,7 +55,90 @@ class fortrabbit {
 			source	=> '/vagrant/files/solarized.vim',
 			require	=> File['/home/vagrant/.vim/colors'];
 		
+		/*
+		 * Admin Site
+		 */
+		'/var/www/web':
+			ensure	=> directory,
+			owner	=> 'vagrant',
+			group	=> 'vagrant',
+			require => Package['apache2-mpm-worker'];
+
+		'/var/www/web/stagr':
+			ensure	=> directory,
+			owner	=> 'vagrant',
+			group	=> 'vagrant',
+			mode    => '0755',
+			source  => '/vagrant/files/default-site',
+			recurse => true,
+			require => File['/var/www/web'];
+
+		'/etc/apache2/sites-available/0000-default':
+			owner   => 'root',
+			group   => 'root',
+			mode    => '0644',
+			source  => '/vagrant/files/default-vhost.conf',
+			require => File['/var/www/web/stagr'];
+
+		'/etc/apache2/sites-enabled/0000-default':
+			ensure	=> 'link',
+			target	=> '/etc/apache2/sites-available/0000-default',
+			require => File['/etc/apache2/sites-available/0000-default'];
+
+		'/etc/apache2/sites-enabled/000-default':
+			ensure	=> 'absent',
+			require	=> Package['apache2-mpm-worker'];
+
+
+		'/etc/php5/fpm/pool.d/stagr.conf':
+			owner   => 'root',
+			group   => 'root',
+			mode    => '0644',
+			source  => '/vagrant/files/default-fpm.conf',
+			require	=> Package['php5-fpm'];
 		
+		'/var/fpm':
+			ensure	=> directory,
+			owner	=> 'vagrant',
+			group	=> 'vagrant',
+			require	=> Package['php5-fpm'];
+
+		'/var/fpm/socks':
+			ensure	=> directory,
+			owner	=> 'vagrant',
+			group	=> 'vagrant',
+			require	=> File['/var/fpm'];
+
+		'/var/fpm/socks/stagr':
+			ensure	=> directory,
+			owner	=> 'vagrant',
+			group	=> 'vagrant',
+			require	=> File['/var/fpm/socks'];
+
+		'/var/fpm/prepend':
+			ensure	=> directory,
+			owner	=> 'vagrant',
+			group	=> 'vagrant',
+			require	=> File['/var/fpm'];
+
+		'/var/fpm/prepend/stagr':
+			ensure	=> directory,
+			owner	=> 'vagrant',
+			group	=> 'vagrant',
+			require	=> File['/var/fpm/prepend'];
+
+		'/var/fpm/prepend/stagr/prepend.php':
+			owner   => 'vagrant',
+			group   => 'vagrant',
+			mode    => '0644',
+			source  => '/vagrant/files/default-prepend.conf',
+			require	=> File['/var/fpm/prepend/stagr'];
+		
+		'/var/www/web/stagr/redir/php':
+			ensure	=> 'link',
+			target	=> '/var/www/web/stagr/htdocs',
+			require => File['/var/www/web/stagr'];
+
 		/*
 		 * Apt sources
 		 */
