@@ -134,11 +134,6 @@ class fortrabbit {
 			source  => '/vagrant/files/default-prepend.conf',
 			require	=> File['/var/fpm/prepend/stagr'];
 		
-		'/var/www/web/stagr/redir/php':
-			ensure	=> 'link',
-			target	=> '/var/www/web/stagr/htdocs',
-			require => File['/var/www/web/stagr'];
-
 		/*
 		 * Apt sources
 		 */
@@ -277,6 +272,14 @@ class fortrabbit {
 				Package['php5-cli']
 			],
 			refreshonly	=> true;*/
+
+		/*
+		 * Create admin site php redir link
+		 */
+		'create-admin-php-link':
+			command		=> 'mkdir /var/www/web/stagr/redir && cd /var/www/web/stagr/redir && ln -s ../htdocs php',
+			unless		=> 'test -e /var/www/web/stagr/redir/php',
+			require		=> File['/var/www/web/stagr'];
 	}
 	
 	
