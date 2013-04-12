@@ -52,10 +52,11 @@ class RemoveCommand extends _Command
             $appName = $this->readStdin($output, 'App Name> ', $appCheck, false, 'Invalid name, try again, use [a-z0-9-]');
         }
 
-        if (!is_dir(sprintf(Setup::APP_WWW_DIR_TMPL, $appName))) {
+        // deactivated, so unclean app installations can be removed as well
+        /*if (!is_dir(sprintf(Setup::APP_WWW_DIR_TMPL, $appName))) {
             $output->writeln("That App doesn't seem to exist.");
             exit(0);
-        }
+        }*/
 
         // make sure this is intentional
         $this->readStdin($output, 'Type DELETE if you are sure> ', function ($in) use($output) {
