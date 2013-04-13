@@ -13,8 +13,8 @@
 namespace Stagr\Tools;
 
 use Symfony\Component\Console\Output\OutputInterface;
-use Cilex\Application;
-use Cilex\Command\Command;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Command\Command;
 use Stagr\Tools\Setup;
 
 /**
@@ -78,12 +78,12 @@ class Setup
     private $output;
 
     /**
-     * @var \Cilex\Command\Command
+     * @var Symfony\Component\Console\Application
      */
     private $command;
 
     /**
-     * @var \Cilex\Application
+     * @var Symfony\Component\Console\Application
      */
     private $app;
 
@@ -103,7 +103,7 @@ class Setup
         $this->appName = $appName;
         $this->output  = $output;
         $this->command = $command;
-        $this->app     = $command->getApplication()->getContainer();
+        $this->app     = $command->getApplication();
     }
 
 

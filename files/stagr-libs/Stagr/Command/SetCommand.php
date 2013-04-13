@@ -64,7 +64,7 @@ class SetCommand extends _Command
 
         // initialize some variables
         $this->appName = $appName = $input->getArgument('app');
-        $this->app = $app = $this->getApplication()->getContainer();
+        $this->app = $app = $this->getApplication();
 
         // set only for existing app
         if (!$app->configParam('apps.'. $appName)) {

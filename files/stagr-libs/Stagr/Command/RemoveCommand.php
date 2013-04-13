@@ -70,7 +70,7 @@ class RemoveCommand extends _Command
         $output->writeln("\n\nRemove {$appName}\n----------");
 
         // remove from config
-        $app = $this->getApplication()->getContainer();
+        $app = $this->getApplication();
         $output->write('Remove App from config: ');
         $app->unsetParam("apps.$appName");
         $output->writeln('<info>OK</info>');

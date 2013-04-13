@@ -56,7 +56,7 @@ class SetupCommand extends _Command
         $setup = new Setup($appName, $output, $this);
         $setup->initEmailAndSsh();
 
-        $app = $this->getApplication()->getContainer();
+        $app = $this->getApplication();
 
         // setup all
         $output->writeln("\n\nSetup {$appName}\n----------");

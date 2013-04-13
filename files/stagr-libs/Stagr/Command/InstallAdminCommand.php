@@ -45,7 +45,7 @@ class InstallAdminCommand extends _Command
         $appName = "000_fortrabbit";
         $setup = new Setup($appName, $output, $this);
 
-        $app = $this->getApplication()->getContainer();
+        $app = $this->getApplication();
 
         if (!$input->getOption("just-update")) {
             $app->configParam('apps.'. $appName, Setup::$DEFAULT_SETTINGS);

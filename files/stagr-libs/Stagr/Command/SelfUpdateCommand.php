@@ -59,7 +59,7 @@ class SelfUpdateCommand extends _Command
     public function performSelfUpdate($stagrDir = '', $stagrRepo = '', $stagrBranch = '', OutputInterface $output = null, $reExecute = true)
     {
         $updated  = false;
-        $app      = $this->getApplication()->getContainer();
+        $app      = $this->getApplication();
         $settings = $app->configParam('self-update') ?: array();
 
         // init dir
@@ -139,7 +139,7 @@ class SelfUpdateCommand extends _Command
             if (!Cmd::runCheck("rsync -ap --delete-after --exclude=.git $stagrDir/files/stagr-libs/Stagr/ ". self::STAGR_INSTALL_DIR. "/ 1>/dev/null 2>/dev/nullL")) {
                 throw new \RuntimeException("Failed to sync Stagr after update");
             }
-            Cmd::run("cp $stagrDir/files/cilex.phar ". self::STAGR_INSTALL_DIR. "/cilex.phar");
+            Cmd::run("cp $stagrDir/files/symfony-console.phar ". self::STAGR_INSTALL_DIR. "/symfony-console.phar");
             Cmd::run("cp $stagrDir/files/stagr.php ". self::STAGR_EXEC_FILE);
 
             $newArgs = $_SERVER['argv'];

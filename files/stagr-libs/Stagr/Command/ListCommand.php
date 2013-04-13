@@ -22,12 +22,12 @@ use Stagr\Tools\Setup;
 /**
  * List apps which have been setup with Stagr
  */
-class ShowCommand extends _Command
+class ListCommand extends _Command
 {
     protected function configure()
     {
         $this
-            ->setName('show')
+            ->setName('list')
             ->setDescription('List apps which have been setup with Stagr')
             ->addOption('details', null, InputOption::VALUE_NONE, 'Show detailed App configurations');
     }
@@ -41,7 +41,7 @@ class ShowCommand extends _Command
             throw new \LogicException("Use 'sudo stagr'!");
         }
 
-        $app = $this->getApplication()->getContainer();
+        $app = $this->getApplication();
         $installedApps = $app->configParam('apps');
         if (is_null($installedApps) || empty($installedApps)) {
             $output->writeln('<error>No Apps found</error>');
