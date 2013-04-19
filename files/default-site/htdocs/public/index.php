@@ -26,6 +26,8 @@ $app->get('/', function () use ($app) {
 	}
 });
 
+$app->get('/ping', function () { echo "PONG"; });
+
 $app->get('/setup', function () use ($app) {
 	$s = new \Stagr\StagrCon;
 	if(!$s->stagrFileExists()) {
@@ -120,9 +122,9 @@ $app->post('/apps/:name/settings/save', function ($name) use ($app) {
 			array_push($properties, '--enable-short-tags');
 		}
 
-		foreach ($_POST['envname'] as $key => $value) {
-			if ($value) {
-				array_push($properties, '--env="' . $value . '=' . $_POST['envvalue'][$key] . '"');
+		foreach ($_POST['envs'] as $env) {
+			if ($env) {
+				array_push($properties, '--env="' . $env . '"');
 			}
 		}
 		$s->saveApp($name, $properties);
