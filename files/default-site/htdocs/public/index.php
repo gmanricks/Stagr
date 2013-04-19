@@ -121,10 +121,9 @@ $app->post('/apps/:name/settings/save', function ($name) use ($app) {
 		} else {
 			array_push($properties, '--enable-short-tags');
 		}
-
-		foreach ($_POST['envs'] as $env) {
-			if ($env) {
-				array_push($properties, '--env="' . $env . '"');
+		if (is_array($_POST['envs'])) {
+			foreach ($_POST['envs'] as $env) {
+					array_push($properties, '--env="' . $env . '"');
 			}
 		}
 		$s->saveApp($name, $properties);

@@ -66,7 +66,7 @@
 			return true;
 		}
 
-		function createApp() {
+		function saveSettings() {
 		    var docRoot = document.getElementById("docroot").value;
 		    if (validate(docRoot)) {
 		        var b = document.getElementById("saveButton");
@@ -92,7 +92,7 @@
   					var envValue = envRows[i].cells[2].firstElementChild.value;
 
   					if (envName != "" && envValue != "") {
-  						qStr += "&envs=" + envName + "=" + envValue;
+  						qStr += "&envs[]=" + envName + "=" + envValue;
   					}
 				}
 
@@ -236,7 +236,7 @@
 		</table>
 	</div>
 	<div class="rightbar">
-		<button id="saveButton" type="submit" class="button large">Save</button>
+		<button id="saveButton" type="submit" onClick="saveSettings()" class="button large">Save</button>
 	</div>
 {% else %}
 	<a href="/" class="button">&lt;- Back</a>
