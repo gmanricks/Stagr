@@ -52,6 +52,9 @@ table{
 	border: 0;
 	font-size: 14px;
 }
+.button.disabled {
+	background: #aaa;
+}
 .button:hover{
 	background: #2B89C2;
 }

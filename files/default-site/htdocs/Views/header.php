@@ -1,8 +1,10 @@
 <!DOCTYPE HTML>
 <html>
 	<head>
-		<title>Stagr Admin</title>		
-		<link href="http://stagr.dev/main.css" rel="stylesheet" type="text/css" />
+		<title>Stagr Admin</title>
+		<link href="/main.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="/jquery.js"></script>
+		<script type="text/javascript" src="/script.js"></script>
 	</head>
 	<body>
 		<div class="container">

@@ -39,6 +39,7 @@ class SetCommand extends _Command
             ->setDescription('Command to adjust specific settings for an app')
             ->addArgument('app', InputArgument::REQUIRED, 'The name of the app to modify')
             ->addOption('env', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Use this to set [multiple] the enviroment variables')
+            ->addOption('env-replace', null, InputOption::VALUE_NONE, 'If set, the env variables replace all (pre)existing variables. Otherwise they are just added.')
             ->addOption('webcall', null, InputOption::VALUE_REQUIRED, 'This property sets the URL for the Webcall trigger')
             ->addOption('timezone', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s Timezone')
             ->addOption('exec-time', null, InputOption::VALUE_REQUIRED, 'This property sets PHP\'s max execution time')
@@ -114,16 +115,20 @@ class SetCommand extends _Command
      */
     protected function setEnviromentVars()
     {
+        $envReplace = $this->input->getOption('env-replace');
         if ($env = $this->input->getOption('env')) {
             $vars = array();
             foreach ($env as $str) {
                 $raw = explode("=", $str);
                 if (count($raw) === 2) {
-                    array_push($vars, array($raw[0] => $raw[1]));
+                    $vars[$raw[0]] = $raw[1];
+                    //array_push($vars, array($raw[0] => $raw[1]));
                 }
             }
-            $this->app->configParam("apps.{$this->appName}.env", $vars);
+            $this->app->configParam("apps.{$this->appName}.env", $vars, $envReplace);
             $this->updateApache = true;
+        } elseif ($envReplace) {
+            $this->app->configParam("apps.{$this->appName}.env", array(), true);
         }
     }
 

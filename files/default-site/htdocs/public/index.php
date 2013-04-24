@@ -71,7 +71,7 @@ $app->post('/apps/new', function () use ($app) {
 			);
 			$app->render("header.php");
 			$app->render("appCreated.php", $data);
-			$app->render("footer.php");	
+			$app->render("footer.php");
 		} else {
 			$app->redirect("/apps/new");
 		}
@@ -104,7 +104,7 @@ $app->get('/apps/:name/settings', function ($name) use ($app) {
 $app->post('/apps/:name/settings/save', function ($name) use ($app) {
 	$s = new \Stagr\StagrCon;
 	if ($s->stagrFileExists() && $s->getApp($name)) {
-		
+
 		$properties = array(
 			'--timezone="' . $_POST['timezone'] . '"',
 			'--exec-time="' . $_POST['exectime'] . '"',
@@ -114,6 +114,7 @@ $app->post('/apps/:name/settings/save', function ($name) use ($app) {
 			'--post-size="' . $_POST['postsize'] . '"',
 			'--output-buffering="' . $_POST['outputsize'] . '"',
 			'--doc-root="' . $_POST['docroot'] . '"',
+			'--env-replace'
 		);
 
 		if ($_POST['shorttags'] === "Off") {
@@ -123,12 +124,17 @@ $app->post('/apps/:name/settings/save', function ($name) use ($app) {
 		}
 		if (is_array($_POST['envs'])) {
 			foreach ($_POST['envs'] as $env) {
-					array_push($properties, '--env="' . $env . '"');
+				if (preg_match('/^(.+)=(.+)$/', $env, $match)) {
+					$envKey = trim(preg_replace('/[^a-zA-Z0-9_\-]/', '', $match[1]));
+					$envVal = trim(preg_replace('/[^a-zA-Z0-9_\-\.= ]/', '', $match[2]));
+					array_push($properties, '--env="' . $envKey . '='. $envVal. '"');
+				}
 			}
 		}
-		$s->saveApp($name, $properties);
-		
+		file_put_contents("/tmp/stagr.log", "PROPERTIES ". json_encode($properties));
 		$app->flash('info', 'Settings Successfully Saved');
+		session_write_close();
+		$s->saveApp($name, $properties);
 		$app->redirect("/apps/$name/settings");
 	} else {
 		$app->redirect("/");

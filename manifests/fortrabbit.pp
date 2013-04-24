@@ -189,7 +189,7 @@ class fortrabbit {
 			owner	=> vagrant,
 			group	=> vagrant,
 			mode	=> '0644',
-			source	=> '/vagrant/files/cilex.phar',
+			source	=> '/vagrant/files/symfony-console.phar',
 			require	=> File['/opt/stagr'];
 	}
 	
