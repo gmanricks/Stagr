@@ -20,42 +20,15 @@
             </tbody>
         </table>
     </div>
-    <div class="right"><button id="createButton" onClick="createApp()" class="button large">Create !</button></div>
+    <div class="right"><button id="createButton" class="button large">Create !</button></div>
 
 
 <script>
-    function ajax(url, cb, data) {
-        var ajx = new XMLHttpRequest();
-
-        ajx.onreadystatechange = function () {
-            if (ajx.readyState == 4) { cb(ajx.status); }
-        }
-
-        if (typeof data !== "undefined") {
-            ajx.open("POST", url, true);
-            ajx.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-            ajx.send(data);
-        } else {
-            ajx.open("GET", url, true);
-            ajx.send();
-        }
-    }
-
-    function loopCb(status) {
-        if (status == 200) {
-            window.location = "/";
-        } else {
-            setTimeout(ping, 300);
-        }
-    }
-
-    function ping() {
-        ajax("/ping", loopCb);
-    }
-
+$(function() {
     function validate(appName) {
-        if (appName.length > 4 && appName.length < 16) {
-            alert("The Apps name has to be 5-15 characters");
+        console.debug("B", appName, appName.length);
+        if (appName.length < 4 || appName.length > 16) {
+            alert("The Apps name has to be 4-16 characters");
             return false;
         }
 
@@ -68,14 +41,16 @@
         return true;
     }
 
-    function createApp() {
-        var appName = document.getElementById("appname").value;
+    $('#createButton').click(function() {
+        var appName = $("#appname").val();
+        console.debug("A", appName);
         if (validate(appName)) {
-            var b = document.getElementById("createButton");
-            b.setAttribute("onClick", "");
-            b.innerText = "Creating ...";
-
-            ajax("/apps/new", ping, "appname=" + appName);   
+            $(this).text('Creating ...');
+            $('input, button').attr('disabled', true).addClass('disabled');
+            $.post('/apps/new', {appname: appName});
+            initPing('/');
         }
-    }
+        return false;
+    });
+});
 </script>

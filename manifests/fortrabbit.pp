@@ -134,11 +134,6 @@ class fortrabbit {
 			source  => '/vagrant/files/default-prepend.conf',
 			require	=> File['/var/fpm/prepend/stagr'];
 		
-		'/var/www/web/stagr/redir/php':
-			ensure	=> 'link',
-			target	=> '/var/www/web/stagr/htdocs',
-			require => File['/var/www/web/stagr'];
-
 		/*
 		 * Apt sources
 		 */
@@ -190,11 +185,11 @@ class fortrabbit {
 			purge	=> true,
 			require	=> File['/opt/stagr'];
 		
-		'/opt/stagr/lib/cilex.phar':
+		'/opt/stagr/lib/symfony-console.phar':
 			owner	=> vagrant,
 			group	=> vagrant,
 			mode	=> '0644',
-			source	=> '/vagrant/files/cilex.phar',
+			source	=> '/vagrant/files/symfony-console.phar',
 			require	=> File['/opt/stagr'];
 	}
 	
@@ -277,6 +272,14 @@ class fortrabbit {
 				Package['php5-cli']
 			],
 			refreshonly	=> true;*/
+
+		/*
+		 * Create admin site php redir link
+		 */
+		'create-admin-php-link':
+			command		=> 'mkdir /var/www/web/stagr/redir && cd /var/www/web/stagr/redir && ln -s ../htdocs php',
+			unless		=> 'test -e /var/www/web/stagr/redir/php',
+			require		=> File['/var/www/web/stagr'];
 	}
 	
 	

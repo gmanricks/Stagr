@@ -1,62 +1,6 @@
 {% if app %}
 	<script>
-		function addRow () {
-			var row = document.createElement("TR");
-			row.setAttribute("class", "envrow");
-
-			var name_col = document.createElement("TD");
-			var name_input = document.createElement("INPUT");
-			name_input.setAttribute("type", "text");
-			name_input.setAttribute("name", "envname[]");
-			name_input.setAttribute("placeholder", "Name");
-			name_col.appendChild(name_input);
-
-			var middle_col = document.createElement("TD");
-			middle_col.appendChild(document.createTextNode("=>"));
-
-			var value_col = document.createElement("TD");
-			var value_input = document.createElement("INPUT");
-			value_input.setAttribute("type", "text");
-			value_input.setAttribute("name", "envvalue[]");
-			value_input.setAttribute("placeholder", "Value");
-			value_col.appendChild(value_input);
-
-
-			row.appendChild(name_col);
-			row.appendChild(middle_col);
-			row.appendChild(value_col);
-
-			document.getElementById("envvar_table").appendChild(row);
-		} 
-
-	    function ajax(url, cb, data) {
-		    var ajx = new XMLHttpRequest();
-
-		    ajx.onreadystatechange = function () {
-		        if (ajx.readyState == 4) { cb(ajx.status); }
-		    }
-
-		    if (typeof data !== "undefined") {
-		        ajx.open("POST", url, true);
-		        ajx.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-		        ajx.send(data);
-		    } else {
-		        ajx.open("GET", url, true);
-		        ajx.send();
-		    }
-		}
-
-		function loopCb(status) {
-		    if (status == 200) {
-		        window.location.reload();
-		    } else {
-		        setTimeout(ping, 300);
-		    }
-		}
-
-		function ping() {
-		    ajax("/ping", loopCb);
-		}
+	$(function() {
 
 		function validate(docRoot) {
 			if (docRoot.indexOf("..") !== -1) {
@@ -66,39 +10,43 @@
 			return true;
 		}
 
-		function saveSettings() {
-		    var docRoot = document.getElementById("docroot").value;
-		    if (validate(docRoot)) {
-		        var b = document.getElementById("saveButton");
-		        b.setAttribute("onClick", "");
-		        b.innerText = "Saving ...";
+		$('#add_var').click(function() {
+			var row = $('<tr class="envrow" />');
+			$('<td>').appendTo(row).append($('<input type="text" name="envname" placeholder="Name">'));
+			$('<td>').appendTo(row).text('=>');
+			$('<td>').appendTo(row).append($('<input type="text" name="envvalue" placeholder="Value">'));
+			row.appendTo('#envvar_table');
+			return false;
+		});
 
-		        var qStr = "docroot=" + docroot + "&"
-		        		 + "timezone=" + document.getElementById("timezone").value + "&"
-		        		 + "exectime=" + document.getElementById("exectime").value + "&"
-		        		 + "memlimit=" + document.getElementById("memlimit").value + "&"
-		        		 + "apclimit=" + document.getElementById("apclimit").value + "&"
-		        		 + "uploadsize=" + document.getElementById("uploadsize").value + "&"
-		        		 + "postsize=" + document.getElementById("postsize").value + "&"
-		        		 + "outputsize=" + document.getElementById("outputsize").value + "&"
-		        		 + "shorttags=";
+		$('#saveButton').click(function() {
+			var docRoot = $.trim($('#docroot').val());
+			if (validate(docRoot)) {
 
-		        qStr += (document.getElementById("shorttags").checked) ? "On" : "Off";
+				// build data
+				var data = {docroot: docRoot};
+				$(['timezone', 'exectime', 'memlimit', 'apclimit', 'uploadsize', 'postsize', 'outputsize']).each(function() {
+					data[this] = $('[name='+ this+ ']').val();
+				});
+				data.shorttags = $('[name=shorttag]:checked').length ? 'On' : 'Off';
+				data.envs = [];
+				$('.envrow').each(function() {
+					var key = $.trim($(this).find('[name=envname]').val());
+					var val = $.trim($(this).find('[name=envvalue]').val());
+					if (key && val) {
+						data.envs.push(key+ '='+ val);
+					}
+				});
 
-		        var envRows = document.getElementsByClassName("envrow");
-
-		        for (var i = 0; i < envRows.length; i++) {
-					var envName = envRows[i].cells[0].firstElementChild.value;
-  					var envValue = envRows[i].cells[2].firstElementChild.value;
-
-  					if (envName != "" && envValue != "") {
-  						qStr += "&envs[]=" + envName + "=" + envValue;
-  					}
-				}
-
-		        ajax("/apps/{{ app.name }}/settings/save", ping, qStr);   
-		    }
-		}
+				// send post, init ping
+				$(this).text('Saving ...');
+				$('#content input, #content select, #content .button').attr('disabled', true).addClass('disabled');
+				$.post('/apps/{{ app.name }}/settings/save', data);
+				initPing(document.location.pathname+ '?'+ (new Date()).getTime());
+			}
+			return false;
+		}).attr('disabled', false);
+	});
 	</script>
 	<table>
 		<tbody>
@@ -107,7 +55,7 @@
 				<td class="right"><h1>Settings for <b>{{ app.name }}</b></h1></td>
 			</tr>
 		</tbody>
-	</table>	
+	</table>
 	{% if flash.info %}
 		<div class="flash">{{ flash.info }}</div>
 	{% endif %}
@@ -203,8 +151,8 @@
 					<td>Short Open Tags</td>
 					<td>=></td>
 					<td>
-						<input type="radio" {% if app.settings.php.short_open_tag == "On" %} checked="checked" {% endif %} name="shorttags" value="On" id="shorttags" /> ON  <--> 
-						<input type="radio" {% if app.settings.php.short_open_tag == "Off" %} checked="checked" {% endif %}  name="shorttags" value="Off" /> OFF					
+						<input type="radio" {% if app.settings.php.short_open_tag == "On" %} checked="checked" {% endif %} name="shorttags" value="On" id="shorttags" /> ON  &lt;--&gt;
+						<input type="radio" {% if app.settings.php.short_open_tag == "Off" %} checked="checked" {% endif %}  name="shorttags" value="Off" /> OFF
 					</td>
 				</tr>
 			</tbody>
@@ -214,10 +162,10 @@
 					<tbody>
 						<tr>
 							<td class="left"><p class="settings_header">Env Vars</p></td>
-							<td class="right"><a onClick="addRow()" class="button green">Add Var</a></td>
+							<td class="right"><a id="add_var" class="button green">Add Var</a></td>
 						</tr>
 					</tbody>
-				</table>	
+				</table>
 	<div class="well">
 		<table>
 			<tbody id="envvar_table">
@@ -227,16 +175,23 @@
 					<td>{{ app.name }}</td>
 					<td>&nbsp;</td>
 				</tr>
+				{% for envName, envValue in app.settings.env %}
 				<tr class="envrow">
-					<td><input type="text" name="envname[]" placeholder="Name" /></td>
+					<td><input type="text" name="envname" placeholder="Name" value="{{ envName | e }}" /></td>
 					<td>=></td>
-					<td><input type="text" name="envvalue[]" placeholder="Value" /></td>
+					<td><input type="text" name="envvalue" placeholder="Value" value="{{ envValue | e }}" /></td>
+				</tr>
+				{% endfor %}
+				<tr class="envrow">
+					<td><input type="text" name="envname" placeholder="Name" /></td>
+					<td>=></td>
+					<td><input type="text" name="envvalue" placeholder="Value" /></td>
 				</tr>
 			</tbody>
 		</table>
 	</div>
 	<div class="rightbar">
-		<button id="saveButton" type="submit" onClick="saveSettings()" class="button large">Save</button>
+		<button id="saveButton" type="submit" class="button large">Save</button>
 	</div>
 {% else %}
 	<a href="/" class="button">&lt;- Back</a>

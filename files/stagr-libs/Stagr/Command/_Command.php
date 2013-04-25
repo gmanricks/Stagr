@@ -12,7 +12,8 @@
 
 namespace Stagr\Command;
 
-use Cilex\Command\Command;
+use Symfony\Component\Console\Command\Command;
+#use Cilex\Command\Command;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**

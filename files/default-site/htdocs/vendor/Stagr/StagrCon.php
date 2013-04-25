@@ -15,7 +15,7 @@ Class StagrCon
 	{
 		return file_exists($this->stagrFilePath);
 	}
-	
+
 	public function getAppNames()
 	{
 		$yaml = yaml_parse_file($this->stagrFilePath);
@@ -28,7 +28,7 @@ Class StagrCon
 	}
 
 	public function getApp($app)
-	{	
+	{
 		$yaml = yaml_parse_file($this->stagrFilePath);
 		$rawApps = $yaml['apps'];
 		if (array_key_exists($app, $rawApps)) {
@@ -61,6 +61,7 @@ Class StagrCon
 	public function saveApp($name, $settings)
 	{
 		$cmd = 'sudo /usr/bin/stagr set ' . $name . ' ' . implode(" ", $settings);
+		error_log("RUN CMD: $cmd");
 		exec($cmd);
 	}
 
@@ -164,7 +165,7 @@ Class StagrCon
 			"Etc/UTC"
 		);
 	}
-	
+
 	public function getExecutionTimes()
 	{
 		return array(
@@ -203,7 +204,7 @@ Class StagrCon
 			"256M"
 		);
 	}
-	
+
 	public function getPostSizes()
 	{
 		return array(

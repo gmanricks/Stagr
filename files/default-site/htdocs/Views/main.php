@@ -5,7 +5,7 @@
 							<td class="right"><a href="/apps/new" class="button green">New App</a></td>
 						</tr>
 					</tbody>
-				</table>			
+				</table>
 				{% if apps %}
 					<table class="app_table">
 						<tbody>

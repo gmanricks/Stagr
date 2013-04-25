@@ -9,6 +9,13 @@
 namespace Stagr;
 
 use Stagr\Tools\Setup;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Class Description [TODO]
@@ -17,7 +24,7 @@ use Stagr\Tools\Setup;
  * @author Ulrich Kautz <ulrich.kautz@gmail.com>
  */
 
-class Stagr extends \Cilex\Application
+class Stagr extends Application
 {
     const VERSION = '0.1.1';
 
@@ -25,7 +32,6 @@ class Stagr extends \Cilex\Application
      * @var Array
      */
     private $config = ['email' => null, 'sshkeys' => []];
-
 
 
     /**
@@ -36,15 +42,8 @@ class Stagr extends \Cilex\Application
     public function __construct()
     {
         parent::__construct('Stagr', self::VERSION);
-        $this->initConfig();
-        foreach (glob(__DIR__. '/Command/*Command.php') as $file) {
-            $cmdClass = preg_replace('/^.+\/(.+Command)\.php$/', '$1', $file);
-            if (strpos($cmdClass, '_') === 0) {
-                continue;
-            }
-            $cmdClass = '\\Stagr\\Command\\'. $cmdClass;
-            $this->command(new $cmdClass());
-        }
+        $this->initStagrConfig();
+        $this->initStagrCommands();
     }
 
     /**
@@ -91,6 +90,46 @@ class Stagr extends \Cilex\Application
     }
 
     /**
+     * == OVERWRITTEN ==
+     *
+     * Gets the default input definition.
+     *
+     * @return InputDefinition An InputDefinition instance
+     */
+    protected function getDefaultInputDefinition()
+    {
+        return new InputDefinition(array(
+            new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
+
+            new InputOption('--help',           '-h', InputOption::VALUE_NONE, 'Display this help message.'),
+            #new InputOption('--quiet',          '-q', InputOption::VALUE_NONE, 'Do not output any message.'),
+            new InputOption('--verbose',        '-v', InputOption::VALUE_NONE, 'Increase verbosity of messages.'),
+            new InputOption('--version',        '-V', InputOption::VALUE_NONE, 'Display this application version.'),
+            #new InputOption('--ansi',           '',   InputOption::VALUE_NONE, 'Force ANSI output.'),
+            #new InputOption('--no-ansi',        '',   InputOption::VALUE_NONE, 'Disable ANSI output.'),
+            #new InputOption('--no-interaction', '-n', InputOption::VALUE_NONE, 'Do not ask any interactive question.'),
+        ));
+    }
+
+
+    /**
+     * == OVERWRITTEN ==
+     *
+     * Switch default command to help
+     */
+    public function doRun(InputInterface $input, OutputInterface $output)
+    {
+        $name = $this->getCommandName($input);
+
+        if (!$name) {
+            $name = 'help';
+            $input = new ArrayInput(array('command' => 'help'));
+        }
+
+        return parent::doRun($input, $output);
+    }
+
+    /**
      * Returns reference to config context
      *
      * @param string  $path  Path to config key
@@ -128,13 +167,25 @@ class Stagr extends \Cilex\Application
     /**
       * Reads stagr YAML config
       */
-    private function initConfig()
+    private function initStagrConfig()
     {
         $configFile = Setup::STAGR_HOME_DIR. '/.stagr';
         if (file_exists($configFile)) {
             $this->config = yaml_parse_file($configFile);
         } else {
             $this->config = [];
+        }
+    }
+    
+    private function initStagrCommands()
+    {
+        foreach (glob(__DIR__. '/Command/*Command.php') as $file) {
+            $cmdClass = preg_replace('/^.+\/(.+Command)\.php$/', '$1', $file);
+            if (strpos($cmdClass, '_') === 0) {
+                continue;
+            }
+            $cmdClass = '\\Stagr\\Command\\'. $cmdClass;
+            $this->add(new $cmdClass());
         }
     }
 

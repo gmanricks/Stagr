@@ -13,8 +13,8 @@
 namespace Stagr\Tools;
 
 use Symfony\Component\Console\Output\OutputInterface;
-use Cilex\Application;
-use Cilex\Command\Command;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Command\Command;
 use Stagr\Tools\Setup;
 
 /**
@@ -78,12 +78,12 @@ class Setup
     private $output;
 
     /**
-     * @var \Cilex\Command\Command
+     * @var Symfony\Component\Console\Application
      */
     private $command;
 
     /**
-     * @var \Cilex\Application
+     * @var Symfony\Component\Console\Application
      */
     private $app;
 
@@ -103,7 +103,7 @@ class Setup
         $this->appName = $appName;
         $this->output  = $output;
         $this->command = $command;
-        $this->app     = $command->getApplication()->getContainer();
+        $this->app     = $command->getApplication();
     }
 
 
@@ -354,7 +354,7 @@ LOGO;
     public function printGitInfo()
     {
         $this->output->writeln("And add this server to your <info>GIT</info> repository:\n");
-        $this->output->writeln("     git remote add staging vagrant@{$this->appName}.dev:apps/{$this->appName}.git");
+        $this->output->writeln("     git remote add staging vagrant@apps/{$this->appName}.dev:apps/{$this->appName}.git");
     }
 
 
