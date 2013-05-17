@@ -238,8 +238,12 @@ class fortrabbit {
 		'restart-fpm':
 			command		=> 'service php5-fpm restart',
 			require		=> File['/etc/php5/fpm/pool.d/www.conf'],
-			subscribe	=> File['/etc/php5/fpm/pool.d/www.conf'];
-		
+			subscribe	=> File['/etc/php5/fpm/pool.d/www.conf', '/etc/php5/fpm/pool.d/stagr.conf'];
+	
+		'restart-apache':
+			command		=> 'apachectl restart',
+			require		=> File['/etc/apache2/sites-enabled/0000-default'],
+			subscribe	=> File['/etc/apache2/sites-enabled/0000-default'];	
 		
 		/*
 		 * Composer install
