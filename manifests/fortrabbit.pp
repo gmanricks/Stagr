@@ -83,7 +83,8 @@ class fortrabbit {
 		'/etc/apache2/sites-enabled/0000-default':
 			ensure	=> 'link',
 			target	=> '/etc/apache2/sites-available/0000-default',
-			require => File['/etc/apache2/sites-available/0000-default'];
+			require => File['/etc/apache2/sites-available/0000-default'],
+			notify	=> Exec['restart-apache']
 
 		'/etc/apache2/sites-enabled/000-default':
 			ensure	=> 'absent',
@@ -95,7 +96,8 @@ class fortrabbit {
 			group   => 'root',
 			mode    => '0644',
 			source  => '/vagrant/files/default-fpm.conf',
-			require	=> Package['php5-fpm'];
+			require	=> Package['php5-fpm'],
+			notify	=> Exec['restart-fpm'];
 		
 		'/var/fpm':
 			ensure	=> directory,
