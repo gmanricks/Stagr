@@ -227,9 +227,9 @@ LOGO;
 
 	//Function to display IP address of current VM for hosts purposes
 	function printHostsInfo($name){ 
-		echo "To get started, add the correct record to your [95mHOSTS[0m file: ([95m/etc/hosts[0m)\n\n";
-		echo getIps($name);
-		echo "\nIf you're not sure try accessing the [95mIPs[0m from your computer ([95mbrowser, ping, curl, etc..[0m)\n\n";
+		echo "To get started, add the following record to your [95mHOSTS[0m file: ([95m/etc/hosts[0m)\n\n";
+                echo "     " . str_pad("127.0.0.1", 15) . "   " . $name . ".dev\n";
+                echo "You can then access your site at: [95mhttp://" . $name . ".dev:8080/[0m\n";
 	}
 	
 	//Helper function to get IP's
@@ -252,7 +252,7 @@ LOGO;
 	//Function to display the GIT remote address
 	function printGitInfo($name){
 		echo "\nAnd add this server to your [95mGIT[0m repository:\n\n";
-		echo "     git remote add staging vagrant@" . $name . ".dev:" . $name . ".git\n";
+		echo "     git remote add staging ssh://vagrant@" . $name . ".dev:2222/home/vagrant/" . $name . ".git\n";
 	}
 
 	//Function to display MySQL connection info

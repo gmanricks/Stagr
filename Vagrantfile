@@ -4,7 +4,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	# base settings
 	config.vm.box = "debian"
 	config.vm.box_url = "https://dl.dropbox.com/u/30949096/debian.box"
-	config.vm.network "public_network"
+	config.vm.network "forwarded_port", guest: 80, host: 8080
 	# virtualbox specific customisation(s)
 	config.vm.provider "virtualbox" do |v|
 		v.customize ["modifyvm", :id, "--memory", "512"]
