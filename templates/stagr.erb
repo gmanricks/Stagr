@@ -118,7 +118,6 @@ LOGO;
 		$sth->bindParam(1, $name);
 		$sth->execute();
 		if ($sth->rowCount() === 0) {
-			echo "X";
 
 			//$name is save cause checked for [a-z0-9-]
 			$sth = $dbh->prepare('CREATE DATABASE `'. $name. '`');
@@ -229,7 +228,7 @@ LOGO;
 	function printHostsInfo($name){ 
 		echo "To get started, add the following record to your [95mHOSTS[0m file: ([95m/etc/hosts[0m)\n\n";
                 echo "     " . str_pad("127.0.0.1", 15) . "   " . $name . ".dev\n";
-                echo "You can then access your site at: [95mhttp://" . $name . ".dev:8080/[0m\n";
+                echo "\nYou can then access your site at: [95mhttp://" . $name . ".dev:8080/[0m\n";
 	}
 	
 	//Helper function to get IP's
